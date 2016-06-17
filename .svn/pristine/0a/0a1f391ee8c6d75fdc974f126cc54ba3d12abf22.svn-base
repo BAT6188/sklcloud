@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+
+<mapper namespace="com.skl.cloud.dao.user.AppUserMapper">
+	<resultMap id="appUserResultMap" type="com.skl.cloud.model.user.AppUser">
+		<id column="user_id" property="id" jdbcType="BIGINT" />
+		<result column="user_name" property="name" jdbcType="VARCHAR" />
+		<result column="user_password" property="password" jdbcType="VARCHAR" />
+		<result column="user_kind" property="kind" jdbcType="VARCHAR" />
+		<result column="user_email" property="email" jdbcType="VARCHAR" />
+		<result column="user_status" property="status" jdbcType="BIT" />
+		<result column="user_createDate" property="createDate" jdbcType="TIMESTAMP" />
+		<result column="user_logintime" property="loginTime" jdbcType="TIMESTAMP" />
+		<result column="user_random" property="random" jdbcType="VARCHAR" />
+		<result column="user_portraint_id" property="portraintId" jdbcType="VARCHAR" />
+		<result column="user_portraint_uuid" property="portraintUuid" jdbcType="VARCHAR" />
+		<result column="cloud_random" property="cloudRandom" jdbcType="VARCHAR" />
+		<result column="user_heartbeat_time" property="heartbeatTime" jdbcType="TIMESTAMP" />
+		<result column="notification" property="notification" jdbcType="VARCHAR" />
+		<result column="user_type" property="userType" jdbcType="TINYINT" />
+		<result column="bind_flag" property="bindFlag" jdbcType="TINYINT" />
+		<result column="system" property="systemType" jdbcType="VARCHAR" />
+		<result column="push_token" property="pushToken" jdbcType="VARCHAR" />
+	</resultMap>
+
+	<insert id="insert" parameterType="com.skl.cloud.model.user.AppUser" useGeneratedKeys="true">
+		<selectKey keyProperty="id" resultType="Long" order="BEFORE">
+			 select get_uuid_short() as id
+		</selectKey>
+    <![CDATA[ 
+        INSERT INTO t_app_user(
+        	user_id,
+	        user_name,
+	        user_password,
+	        user_kind,
+	        user_email,
+	        user_status,	        
+	        user_createdate,
+	        user_logintime,
+	        user_random,
+	        user_portraint_id,
+	        user_portraint_uuid,
+	        cloud_random,
+	        user_heartbeat_time,
+	        notification,
+	        user_type,
+	        bind_flag)
+	    values(
+	    	#{id},
+	        #{name},
+	        #{password},
+	        #{kind},
+	        #{email},
+	        #{status},
+	        #{createDate},
+	        #{loginTime},
+	        #{random},
+            #{portraintId},
+            #{portraintUuid},
+            #{cloudRandom},
+            #{heartbeatTime},
+            #{notification},
+	        #{userType},
+            #{bindFlag}
+	        ) 
+    ]]>
+	</insert>
+	
+	<update id="update" parameterType="com.skl.cloud.model.user.AppUser">
+	    <![CDATA[
+		    UPDATE t_app_user 
+		    SET user_status=#{status},
+		        user_password = #{password},
+		        user_logintime = #{loginTime},
+		        user_random = #{random},
+		        cloud_random = #{cloudRandom},
+		        user_heartbeat_time = #{heartbeatTime},
+		        bind_flag = #{bindFlag},
+		        user_name = #{name},
+			    notification = #{notification},
+			    user_portraint_id = #{portraintId},
+			    user_portraint_uuid = #{portraintUuid},
+			    system = #{systemType},
+			    push_token = #{pushToken}
+	    ]]> 
+	    <where>
+	    	1=1
+            <if test="id !=null ">
+                AND user_id = #{id}
+            </if>
+            <if test="cloudRandom !=null ">
+                AND cloud_random = #{cloudRandom}
+            </if>
+        </where>  
+    </update>
+    
+    <update id="updateUserWithId" parameterType="com.skl.cloud.model.user.AppUser">
+        <![CDATA[
+            UPDATE t_app_user 
+            SET user_status=#{status},
+                user_password = #{password},
+                user_logintime = #{loginTime},
+                user_random = #{random},
+                cloud_random = #{cloudRandom},
+                user_heartbeat_time = #{heartbeatTime},
+                bind_flag = #{bindFlag}
+        ]]> 
+        <where>
+            <if test="id !=null ">
+                user_id = #{id}
+            </if>
+        </where>  
+    </update>
+    
+	<!-- delete user by primary key (user_id)-->
+    <delete id="delete" parameterType="long">
+    <![CDATA[
+        DELETE FROM t_app_user WHERE user_id = #{0}
+    ]]>
+    </delete>
+
+	<!-- select App user by user -->
+    <select id="getUser" parameterType="com.skl.cloud.model.user.AppUser" resultMap="appUserResultMap">
+    <![CDATA[
+        SELECT
+            *
+        FROM
+            t_app_user
+      ]]> 
+       <where>
+       		1=1
+            <if test="id !=null ">
+                AND user_id = #{id}
+            </if>
+            <if test="email !=null ">
+                AND user_email = #{email}
+            </if>
+            <if test="portraintUuid !=null ">
+                AND user_portraint_uuid = #{portraintUuid}
+            </if>
+        </where> 
+    </select>
+	
+	<select id="getForgetPwUserByEmail" parameterType="string" statementType="CALLABLE"
+        resultMap="appUserResultMap">
+    <![CDATA[
+        CALL selectUserByEmail (#{0})
+    ]]>
+    </select>
+	
+</mapper>

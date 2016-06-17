@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.skl.cloud.dao.audio.MediaMapper">
+
+	<select id="getMedia" parameterType="long" resultMap="mediaResultMap">
+		SELECT * FROM t_platform_media WHERE id = #{id}
+	</select>
+	
+	<!-- 根据SN查询ipc云端文件 -->
+	<select id="listMediaBySN"  resultMap="mediaResultMap">
+	SELECT
+	*
+    FROM
+	t_platform_media m
+    WHERE
+	m.camera_id = (
+		SELECT
+			t_platform_ipcamera.camera_id
+		FROM
+			t_platform_ipcamera
+		WHERE
+			t_platform_ipcamera.camera_serialno = #{sn}
+	)
+    AND m.media_type = #{mediaType}
+    AND m.source_type = 1
+    UNION
+	SELECT
+		*
+	FROM
+		t_platform_media m
+	WHERE
+		m.media_type = #{mediaType}
+	AND m.source_type = 0
+	</select>
+	
+	<select id="getMediaByName" resultMap="mediaResultMap">
+	SELECT
+	    *
+    FROM
+	    t_platform_media
+    WHERE
+	    file_name = #{fileName}
+	</select>
+
+    <select id="listSysMediaByType"  resultMap="mediaResultMap">
+	SELECT
+		*
+	FROM
+		t_platform_media m
+	WHERE
+		m.media_type = #{0}
+	AND m.source_type = 0
+	</select>
+
+	<resultMap id="mediaResultMap" type="com.skl.cloud.model.audio.Media">
+		<id column="id" property="id" jdbcType="BIGINT" />
+		<result column="camera_id" property="cameraId" jdbcType="BIGINT" />
+		<result column="file_name" property="fileName" jdbcType="VARCHAR" />
+		<result column="file_url" property="fileUrl" jdbcType="VARCHAR" />
+		<result column="file_size" property="fileSize" jdbcType="BIGINT" />
+		<result column="play_time" property="playTime" jdbcType="BIGINT" />
+		<result column="media_type" property="mediaType" jdbcType="TINYINT" />
+		<result column="source_type" property="sourceType" jdbcType="TINYINT" />
+		<result column="create_date" property="createDate" jdbcType="TIMESTAMP" />
+		<result column="l_upd_date" property="updateDate" jdbcType="TIMESTAMP" />
+	</resultMap>
+</mapper>

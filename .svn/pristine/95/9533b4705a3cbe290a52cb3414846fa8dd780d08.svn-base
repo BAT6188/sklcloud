@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.skl.cloud.dao.user.PermissionMapper">
+	<insert id="insertPermission" parameterType="com.skl.cloud.model.user.Permission" useGeneratedKeys="true">
+       	<selectKey keyProperty="permissionId" resultType="Long" order="BEFORE">
+			 select get_uuid_short() as permissionId
+		</selectKey>
+       	INSERT INTO t_permission(
+	       	permission_id,
+			name,
+			type,
+			uri,
+			parent_id,
+			parent_ids,
+			permission,
+			available_flag,
+			create_date,
+			l_upd_date
+        	)
+    	VALUES(
+    		#{permissionId},
+    		#{name},
+    		#{type},
+    		#{uri},
+    		#{parentId},
+    		#{parentIds},
+    		#{permission},
+    		#{available_flag},
+    		now(),
+    		now()
+    		)
+	</insert>
+	
+	<update id="updatePermission" parameterType="com.skl.cloud.model.user.Permission">
+	    UPDATE t_permission 
+	    SET 
+			permission_id = #{permissionId},
+			name = #{name},
+			type = #{type},
+			uri = #{uri},
+			parent_id = #{parentId},
+			parent_ids = #{parentIds},
+			permission = #{permission},
+			available_flag = #{available_flag},
+			l_upd_date = now()
+	    <where>
+	    	1=1
+            <if test="permissionId !=null ">
+                AND permission_id = #{permissionId}
+            </if>
+            <if test="type !=null ">
+                AND type = #{type}
+            </if>
+            <if test="parentId !=null ">
+                AND parent_id = #{parentId}
+            </if>
+        </where>  
+    </update>
+    
+    <delete id="deletePermission" parameterType="long">
+        DELETE FROM t_permission WHERE permission_id = #{0}
+    </delete>
+    
+    <select id="queryPermission" parameterType="com.skl.cloud.model.user.Permission" resultType="com.skl.cloud.model.user.Permission">
+        SELECT
+            permission_id as permissionId,
+			name,
+			type,
+			uri,
+			parent_id as parentId,
+			parent_ids as parentIds,
+			permission,
+			available_flag as availableFlag,
+			create_date as createDate,
+			l_upd_date as lupdDate
+        FROM
+            t_permission
+       <where>
+       		1=1
+            <if test="permissionId !=null ">
+                AND permission_id = #{permissionId}
+            </if>
+            <if test="type !=null ">
+                AND type = #{type}
+            </if>
+            <if test="parentId !=null ">
+                AND parent_id = #{parentId}
+            </if>
+        </where> 
+    </select>
+</mapper>

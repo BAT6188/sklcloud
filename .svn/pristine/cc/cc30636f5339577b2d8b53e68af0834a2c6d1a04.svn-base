@@ -1,0 +1,23 @@
+#dev db
+jdbc_url=jdbc:mysql://192.168.139.216:3306/sklCloud?useUnicode=true&characterEncoding=UTF-8&zeroDateTimeBehavior=convertToNull
+jdbc_username=cloud
+jdbc_password=123456
+
+#rabbitmq dev
+rabbitmq.host=192.168.139.19
+rabbitmq.port=5672
+rabbitmq.username=wechat
+rabbitmq.password=wechat123456
+rabbitmq.connection.timeout=1800000
+rabbitmq.channelCacheSize=25
+
+# SMTP server IP and Port
+mail.host=mail.sky-light.com.hk
+mail.port=25
+mail.username=cloud_admin@sky-light.com.hk
+mail.password=1234qwerasdf
+mail.encoding=utf-8
+# Mail session attributes and server authentication 
+mail.smtp.from=cloud_admin@sky-light.com.hk
+mail.smtp.auth=false
+mail.smtp.timeout=10000

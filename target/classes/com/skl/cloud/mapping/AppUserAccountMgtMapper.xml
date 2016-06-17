@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.skl.cloud.dao.AppUserAccountMgtMapper">
+	
+	<update id="reSetPw" parameterType="string">
+	<![CDATA[
+	update 
+		t_app_user
+	set 
+		user_password = #{2},
+		cloud_random = #{3}
+	where
+		user_id = #{0} and
+	 	cloud_random = #{1}
+	]]>
+	</update>
+	
+	<insert id="insertUserThirdAccount" parameterType="com.skl.cloud.model.user.UserThirdAccount" useGeneratedKeys="true">
+		<selectKey keyProperty="id" resultType="Long" order="BEFORE">
+			 select get_uuid_short() as id
+		</selectKey>
+    <![CDATA[ 
+        insert
+        into
+         	t_app_user_third_account
+         	(id,
+         	user_id,
+		    open_id,
+		    open_kind,
+		    create_time,
+		    change_time)
+		values
+			#{id},
+			#{userId},
+			#{openID},
+			#{openKind},
+			now(),
+			now()) 
+	]]>
+	</insert>
+	
+	<select id="selectUserThirdAccount" parameterType="string" resultType="com.skl.cloud.model.user.UserThirdAccount">
+    <![CDATA[
+		select
+		   id as id,
+		   user_id as userId,
+		   open_id as openID,
+		   open_kind as openKind,
+		   create_time as createTime,
+		   change_time as changeTime
+		from
+		    t_app_user_third_account
+		where
+		    open_kind = #{0} and
+		    open_id = #{1}
+    ]]>
+	</select>
+</mapper>

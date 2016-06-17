@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.skl.cloud.dao.StreamResourcesMapper">
+
+	<select id="getIPCAddress" resultType="java.util.Map">
+		select
+		a.server_public_ip as stunHost,
+		a.server_port as stunPort
+		from
+		t_platform_stun_address a
+		order by RAND() limit 1
+	</select>
+
+	<select id="queryTheFreestStreamAccessSystemInfo" parameterType="int"
+		resultType="java.util.Map">
+	<![CDATA[ 
+		SELECT 
+			server_uuid AS uuid,  
+			server_private_ip AS ip,
+			server_port AS port 
+		from 
+		t_platform_subsys_address 
+		where 
+			server_sys_id = 3
+		ORDER BY 
+			server_actual_access_num LIMIT #{0},1
+	]]>
+	</select>
+
+	<select id="getFreeSystemInfosBySystemId" parameterType="Integer"
+		resultType="com.skl.cloud.model.SubsysAddress">
+    <![CDATA[ 
+        SELECT 
+            server_uuid AS serverUuid,  
+            server_private_ip AS ip,
+            server_port AS port,
+            server_sys_id as sysId
+        from 
+        t_platform_subsys_address 
+        where 
+            server_sys_id = #{0}
+        ORDER BY 
+            server_actual_access_num 
+    ]]>
+	</select>
+
+	<select id="getFreeSystemInfoBySystemIdAndLimitStart"
+		parameterType="Integer" resultType="com.skl.cloud.model.SubsysAddress">
+    <![CDATA[ 
+        SELECT 
+            server_uuid AS serverUuid,  
+            server_private_ip AS ip,
+            server_port AS port,
+            server_sys_id as sysId
+        from 
+        t_platform_subsys_address 
+        where 
+            server_sys_id = #{0}
+        ORDER BY 
+            server_actual_access_num LIMIT #{1},1
+    ]]>
+	</select>
+
+	<select id="getServerCountBySystemId" parameterType="Integer"
+		resultType="Integer">
+	<![CDATA[
+       select COUNT(server_uuid) from t_platform_subsys_address where server_sys_id = #{0}
+    ]]>
+    </select>
+        
+
+	<select id="getSubsystemAddressById" parameterType="Integer"
+		resultType="com.skl.cloud.model.sub.SubsysAddress">
+    <![CDATA[ 
+        SELECT 
+        	server_uuid,
+			server_public_ip,
+			server_private_ip,
+			server_port,
+			server_max_access_num,
+			server_sys_id,
+			server_actual_access_num,
+			server_requested_not_access_num ,
+			server_heart_beat_time ,
+			server_front_dispatched_status 
+        from 
+        t_platform_subsys_address 
+        where 
+            server_sys_id = #{0}
+    ]]>
+	</select>
+	
+	<!-- 查询流处理子系统对应服务器的IP和Port -->
+	<select id="querySubsysIpPort" resultType="com.skl.cloud.model.SubsysAddress">
+		SELECT 
+			   server_uuid as serverUuid, 
+			   server_private_ip as ip, 
+			   server_port as port,
+			    server_sys_id as sysId 
+		FROM 
+		       t_platform_subsys_address
+		WHERE
+		      server_uuid = #{0}
+	</select>
+
+	<!-- 查询IPC对应的RTSP流信息 -->
+	<select id="queryEventStatus" resultType="String">
+		SELECT
+			event_status
+		FROM
+			t_event_alert
+		WHERE
+			camera_serialno = #{0}  AND 
+			channel_id = #{1}   AND
+			event_id = #{2}  AND 
+			date_time = #{3}
+	</select>
+</mapper>

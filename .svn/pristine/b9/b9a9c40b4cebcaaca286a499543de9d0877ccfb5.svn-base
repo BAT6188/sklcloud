@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.skl.cloud.dao.ipc.IPCMapper" >
+  <resultMap id="ipcResultMap" type="com.skl.cloud.model.ipc.IPCamera" >
+    <id column="camera_id" property="id" jdbcType="BIGINT" />
+    <result column="camera_serialno" property="sn" jdbcType="VARCHAR" />
+    <result column="camera_mac" property="mac" jdbcType="VARCHAR" />
+    <result column="camera_nickname" property="nickname" jdbcType="VARCHAR" />
+    <result column="camera_kind" property="kind" jdbcType="VARCHAR" />
+    <result column="camera_model" property="model" jdbcType="VARCHAR" />
+    <result column="camera_pincode" property="pincode" jdbcType="VARCHAR" />
+    <result column="camera_makedate" property="makeDate" jdbcType="TIMESTAMP" />
+    <result column="camera_version" property="version" jdbcType="VARCHAR" />
+    <result column="camera_verdate" property="versionDate" jdbcType="TIMESTAMP" />
+    <result column="camera_random" property="random" jdbcType="VARCHAR" />
+    <result column="camera_rece_ipc_random" property="receIpcRandom" jdbcType="VARCHAR" />
+    <result column="camera_send_ipc_random" property="sendIpcRandom" jdbcType="VARCHAR" />
+    <result column="camera_p2p_random" property="p2pRandom" jdbcType="VARCHAR" />
+    <result column="camera_islive" property="isLive" jdbcType="BIT" />
+    <result column="camera_isonline" property="isOnline" jdbcType="BIT" />
+    <result column="camera_status" property="status" jdbcType="BIT" />
+    <result column="camera_validate" property="validateDate" jdbcType="TIMESTAMP" />
+    <result column="camera_expired" property="expiredDate" jdbcType="TIMESTAMP" />
+    <result column="camera_offline_time" property="offlineTime" jdbcType="TIMESTAMP" />
+    <result column="camera_online_status" property="onlineStatus" jdbcType="VARCHAR" />
+    <result column="camera_time_zone" property="timeZone" jdbcType="VARCHAR" />
+    <result column="lenth" property="lenth" jdbcType="INTEGER" />
+    <result column="width" property="width" jdbcType="INTEGER" />
+    <result column="deveice_id" property="deviceId" jdbcType="VARCHAR" />
+    <result column="motion_alert_status" property="motionAlertStatus" jdbcType="TINYINT" />
+    <result column="sound_alert_status" property="soundAlertStatus" jdbcType="TINYINT" />
+    <result column="video_share_expire" property="videoShareExpire" jdbcType="BIGINT" />
+    <result column="speaker_volume" property="speakerVolume" jdbcType="BIGINT" />
+    <result column="fw_download_status" property="fwDownloadStatus" jdbcType="TINYINT" />
+    <result column="fw_download_error_reason" property="fwDownloadErrorReason" jdbcType="VARCHAR" />
+    <result column="snapshot_uuid" property="snapshotUuid" jdbcType="VARCHAR" />
+    <result column="live_share_status" property="liveShareStatus" jdbcType="TINYINT" />
+  </resultMap>
+  
+  <update id="update" parameterType="com.skl.cloud.model.ipc.IPCamera">
+  <![CDATA[
+		UPDATE t_platform_ipcamera
+		SET 
+			 camera_status = #{status},
+			 camera_islive = #{isLive},
+			 camera_isonline = #{isOnline},
+			 camera_rece_ipc_random = #{receIpcRandom},
+			 camera_send_ipc_random = #{sendIpcRandom},
+			 camera_version = #{version},
+			 camera_verdate = #{versionDate},
+			 camera_expired = #{expiredDate},
+			 motion_alert_status = #{motionAlertStatus},
+			 sound_alert_status = #{soundAlertStatus},
+			 video_share_expire = #{videoShareExpire},
+			 speaker_volume = #{speakerVolume},
+			 deveice_id = #{deviceId},
+			 camera_nickname = #{nickname},
+			 camera_time_zone = #{timeZone},
+			 camera_makedate = #{makeDate},
+			 camera_kind = #{kind},
+			 camera_offline_time = #{offlineTime},
+			 camera_random = #{random},
+			 camera_model= #{model},
+			 fw_download_status=#{fwDownloadStatus},
+			 fw_download_error_reason=#{fwDownloadErrorReason},
+			 snapshot_uuid=#{snapshotUuid},
+			 live_share_status=#{liveShareStatus}
+		WHERE
+             camera_id = #{id}
+    ]]>
+    </update>
+    
+     <!-- insert IPCamera -->
+    <insert id="insert" parameterType="com.skl.cloud.model.ipc.IPCamera"
+        useGeneratedKeys="true" keyProperty="camera_id">
+    <![CDATA[ 
+        INSERT INTO t_platform_ipcamera(
+                camera_serialno,
+                camera_mac,
+                camera_nickname,
+                camera_kind,
+                camera_model,
+                camera_pincode,
+                camera_makedate,
+                camera_version,
+                camera_verdate,
+                camera_random,
+                camera_rece_ipc_random,
+                camera_send_ipc_random,
+                camera_p2p_random,
+                camera_islive,
+                camera_isonline,
+                camera_status,
+                camera_validate,
+                camera_expired,
+                camera_offline_time,
+                camera_online_status,
+                camera_time_zone,
+                lenth,
+                width,
+                deveice_id,
+                motion_alert_status,
+                sound_alert_status,
+                video_share_expire,
+                speaker_volume,
+                snapshot_uuid,
+                live_share_status)
+               values(
+                #{sn},
+                #{mac},
+                #{nickname},
+                #{kind},
+		        #{model},
+		        #{pincode},
+		        #{makeDate},
+		        #{version},
+		        #{versionDate},
+		        #{random},
+		        #{receIpcRandom},
+		        #{sendIpcRandom},
+		        #{p2pRandom},
+		        #{isLive},
+		        #{isOnline},
+                #{status},
+		        #{validateDate},
+		        #{expiredDate},
+		        #{offlineTime},
+		        #{onlineStatus},
+		        #{timeZone},
+		        #{lenth},
+		        #{width},
+		        #{deviceId},
+		        #{motionAlertStatus},
+		        #{soundAlertStatus},
+                #{videoShareExpire},
+		        #{speakerVolume},
+		        #{snapshotUuid},
+		        #{liveShareStatus}
+               ) 
+    ]]>
+    </insert>
+    
+    <!-- delete IPCamera by primary key (id)-->
+    <delete id="delete" parameterType="long">
+    <![CDATA[
+        DELETE FROM t_platform_ipcamera WHERE camera_id = #{0}
+    ]]>
+    </delete>
+
+	<select id="queryIPCamera" parameterType="com.skl.cloud.model.ipc.IPCamera" resultMap="ipcResultMap">
+		SELECT
+		* FROM t_platform_ipcamera 
+        <where>
+            <if test="id !=null ">
+                camera_id = #{id}
+            </if>
+            <if test="sn !=null ">
+                AND camera_serialno = #{sn}
+            </if>
+            <if test="deviceId !=null ">
+                AND deveice_id = #{deviceId}
+            </if>
+        </where>
+	</select>
+	
+</mapper>

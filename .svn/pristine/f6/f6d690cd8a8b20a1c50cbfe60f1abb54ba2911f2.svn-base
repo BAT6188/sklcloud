@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.skl.cloud.dao.ipc.StreamStatusCountMapper" >
+	<resultMap id="resultMap" type="com.skl.cloud.model.ipc.StreamStatusCount" >
+	    <id column="id" property="id" jdbcType="BIGINT" />
+	    <result column="sn" property="sn" jdbcType="VARCHAR" />
+	    <result column="channel_id" property="channelId" jdbcType="VARCHAR" />
+	    <result column="channel_name" property="channelName" jdbcType="VARCHAR" />
+	    <result column="stream_type" property="streamType" jdbcType="VARCHAR" />
+	    <result column="video_code" property="videoCode" jdbcType="VARCHAR" />
+	    <result column="audio_code" property="audioCode" jdbcType="VARCHAR" />
+	    <result column="resolution_h" property="resolutionH" jdbcType="VARCHAR" />
+	    <result column="resolution_w" property="resolutionW" jdbcType="VARCHAR" />
+	    <result column="stream_status" property="streamStatus" jdbcType="VARCHAR" />
+	    <result column="p2p_stream_up_time" property="p2pStreamUpTime" jdbcType="TIMESTAMP" />
+	    <result column="p2p_stream_end_time" property="p2pStreamEndTime" jdbcType="TIMESTAMP" />
+        <result column="total_p2p_play_time" property="totalP2pPlayTime" jdbcType="BIGINT" />
+        <result column="total_p2p_play_num" property="totalP2pPlayNum" jdbcType="TINYINT" />
+	    <result column="relay_stream_up_time" property="relayStreamUpTime" jdbcType="TIMESTAMP" />
+	    <result column="relay_stream_end_time" property="relayStreamEndTime" jdbcType="TIMESTAMP" />
+	    <result column="cur_access_relay_num" property="curAccessRelayNum" jdbcType="TINYINT" />
+	    <result column="total_relay_play_time" property="totalRelayPlayTime" jdbcType="BIGINT" />
+	    <result column="total_relay_play_num" property="totalRelayPlayNum" jdbcType="TINYINT" />
+	    <result column="total_relay_req_num" property="totalRelayReqNum" jdbcType="TINYINT" />
+	    <result column="schedule_fail_num" property="scheduleFailNum" jdbcType="INTEGER" />
+	    <result column="create_date" property="createDate" jdbcType="TIMESTAMP" />
+	    <result column="l_upd_date" property="updateDate" jdbcType="TIMESTAMP" />
+	  </resultMap>
+	  
+    <select id="select" parameterType="com.skl.cloud.model.ipc.StreamStatusCount" resultMap="resultMap"> 
+       <![CDATA[
+        SELECT
+			*
+		FROM
+			t_platform_ipcamera_stream
+	   ]]> 
+       <where>
+       		1=1
+            <if test="sn !=null ">
+                AND sn = #{sn}
+            </if>
+            <if test="channelId !=null ">
+                AND channel_id = #{channelId}
+            </if>
+        </where> 
+	</select>
+	  
+	<insert id="insert" parameterType="com.skl.cloud.model.ipc.StreamStatusCount" useGeneratedKeys="true">
+        <selectKey keyProperty="id" resultType="Long" order="BEFORE">
+			 select get_uuid_short() as id
+		</selectKey>
+    
+    <![CDATA[ 
+    INSERT INTO t_platform_ipcamera_stream (
+        id,
+		sn,
+		channel_id,
+		channel_name,
+		stream_type,
+		video_code,
+		audio_code,
+		resolution_h,
+		resolution_w,
+		stream_status,
+		p2p_stream_up_time,
+		p2p_stream_end_time,
+		total_p2p_play_time,
+		total_p2p_play_num,
+		relay_stream_up_time,
+		relay_stream_end_time,
+		cur_access_relay_num,
+		total_relay_play_time,
+		total_relay_play_num,
+		total_relay_req_num,
+		schedule_fail_num,
+		create_date,
+		l_upd_date
+	)
+	VALUES
+		(
+			#{id},
+			#{sn},
+			#{channelId},
+			#{channelName},
+			#{streamType},
+			#{videoCode},
+			#{audioCode},
+			#{resolutionH},
+			#{resolutionW},
+			#{streamStatus},
+			#{p2pStreamUpTime},
+			#{p2pStreamEndTime},
+			#{totalP2pPlayTime},
+			#{totalP2pPlayNum},
+			#{relayStreamUpTime},
+			#{relayStreamEndTime},
+			#{curAccessRelayNum},
+			#{totalRelayPlayTime},
+			#{totalRelayPlayNum},
+			#{totalRelayReqNum},
+			#{scheduleFailNum},
+			now(),
+			now()
+	    )
+    ]]>
+    </insert>
+	  
+	 <update id="update" parameterType="com.skl.cloud.model.ipc.StreamStatusCount">
+     <![CDATA[
+	    UPDATE t_platform_ipcamera_stream
+		SET  
+			 sn = #{sn},
+			 channel_id = #{channelId},
+			 channel_name = #{channelName},
+			 stream_type = #{streamType},
+			 video_code = #{videoCode},
+			 audio_code = #{audioCode},
+			 resolution_h = #{resolutionH},
+			 resolution_w = #{resolutionW},
+			 stream_status = #{streamStatus},
+			 p2p_stream_up_time = #{p2pStreamUpTime},
+			 p2p_stream_end_time = #{p2pStreamEndTime},
+			 total_p2p_play_time = #{totalP2pPlayTime},
+			 total_p2p_play_num = #{totalP2pPlayNum},
+			 relay_stream_up_time = #{relayStreamUpTime},
+			 relay_stream_end_time = #{relayStreamEndTime},
+			 cur_access_relay_num = #{curAccessRelayNum},
+			 total_relay_play_time = #{totalRelayPlayTime},
+			 total_relay_play_num = #{totalRelayPlayNum},
+			 total_relay_req_num = #{totalRelayReqNum},
+			 schedule_fail_num = #{scheduleFailNum},
+			 create_date = #{createDate},
+			 l_upd_date = now() 
+	     ]]> 
+	    <where>
+            <if test="id !=null ">
+                 id = #{id}
+            </if>
+        </where>     
+    </update> 
+	  
+	 
+	  
+</mapper>

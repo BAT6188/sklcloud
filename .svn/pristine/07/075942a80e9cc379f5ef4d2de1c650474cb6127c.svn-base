@@ -1,0 +1,4 @@
+#dev db
+jdbc_url=jdbc:mysql://192.168.139.216:3306/sklCloudTest?useUnicode=true&characterEncoding=UTF-8&zeroDateTimeBehavior=convertToNull
+jdbc_username=cloud
+jdbc_password=123456

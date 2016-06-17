@@ -1,0 +1,935 @@
+package com.skl.cloud.controller.app;
+
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Collection;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import javax.servlet.http.HttpServletRequest;
+
+import org.apache.log4j.Logger;
+import org.apache.shiro.authz.annotation.RequiresPermissions;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestMapping;
+
+import com.skl.cloud.common.exception.BusinessException;
+import com.skl.cloud.controller.common.BaseController;
+import com.skl.cloud.model.S3FileData;
+import com.skl.cloud.model.feed.DeviceDynamic;
+import com.skl.cloud.model.feed.DevicesInfo;
+import com.skl.cloud.model.feed.EventsInfo;
+import com.skl.cloud.model.feed.UsersInfo;
+import com.skl.cloud.service.S3Service;
+import com.skl.cloud.service.feed.AppFeedService;
+import com.skl.cloud.util.common.DateUtil;
+import com.skl.cloud.util.common.XmlUtil;
+import com.skl.cloud.util.config.SystemConfig;
+
+/**
+ * 用于App请求的Feed功能模块
+ * 
+ * @ClassName: AppFeedController
+ * @author wangming
+ * @date 2015年11月18日
+ *
+ */
+@Controller
+@RequestMapping("/skl-cloud/app/Security/AAA/users")
+public class AppFeedController extends BaseController {
+
+	private static final Logger logger = Logger.getLogger(AppFeedController.class);
+
+	// 查询动态数据信息时的类型（温度或者湿度）
+	String dynamic;
+	// 储存多个查询参数（温度或者湿度）
+	String[] dynamics;
+
+	@Autowired
+	private AppFeedService appFeedService;
+
+	@Autowired
+	private S3Service s3Service;
+
+	/**
+	 * 6.2 APP用户设置过滤条件查询上报事件（告警）信息
+	 * @Title: getEvents
+	 * @param request
+	 * @param (参数说明)
+	 * @return ResponseEntity<String> (返回值说明)
+	 * @author wangming
+	 * @date 2015年10月22日
+	 */
+	@RequiresPermissions("video:eventVod:post")
+	@RequestMapping("/event")
+	public ResponseEntity<String> getEvents(HttpServletRequest request) {
+
+		String sReturn = "<QueryHistoryEventDynamic  version=\"1.0\" xmlns=\"urn:skylight\"><HistoryEventDynamic></HistoryEventDynamic><ResponseStatus><statusCode>1</statusCode><statusString>1</statusString></ResponseStatus></QueryHistoryEventDynamic>";
+
+		List<EventsInfo> eventsList = null;
+		List<UsersInfo> userInfoList = null;
+		List<DevicesInfo> deviceInfoList = null;
+
+		String startTime = "";
+		String endTime = "";
+
+		// 定义一个条件过滤器集合
+		List<Map> filterList = null;
+		filterList = XmlUtil.getRequestXmlParamEvent(request);
+
+		// 得到第一个条件过滤器
+		Map<String, Object> filterParamMap = new HashMap<String, Object>();
+		if (filterList.size() == 0) {
+			// 当请求参数为空 则参数都采用默认值
+			filterParamMap.put("item", "event");
+			filterParamMap.put("event", "circle");
+		} else {
+			filterParamMap = filterList.get(0);
+		}
+
+		Map<String, Object> queryEventsMap = new HashMap<String, Object>();
+		
+		// 要从digest中取出userId 得到app发起请求的用户Id
+		Long requestUserId = getUserId();
+		
+		logger.info("******************请求的userId：" + requestUserId);
+		// 得到查询相关事件（告警）等信息的时间范围条件
+		startTime = (String) filterParamMap.get("start_time");
+		endTime = (String) filterParamMap.get("end_time");
+		String deviceClass = (String) filterParamMap.get("device_class");
+		String model = (String) filterParamMap.get("model");
+
+		// 获取过滤器类型
+		String item = (String) filterParamMap.get("item");
+		logger.info("******************获取到的过滤器类型是：" + item);
+		// 判断是否为事件（告警）的过滤器
+		if ("event".equals(item) || item == null) {
+			// 获取查询焦点
+			String event = (String) filterParamMap.get("event");
+
+			// 构造一个大集合：userId所在家庭组下所有用户分享的所有设备
+			Map<Long, Map<Long, List<String>>> sharedSnMap = new HashMap<Long, Map<Long, List<String>>>();
+			List<Long> circleIds = new ArrayList<Long>();
+			// 查询请求的userId所在的所有家庭组Id
+			circleIds = appFeedService.queryAllCircleIdsByUserId(requestUserId);
+ 
+			for (Long circleId : circleIds) {
+				Map<Long, List<String>> userIdSnMap = new HashMap<Long, List<String>>();
+				List<Long> userIds = new ArrayList<Long>();
+				// 查询每个circleId对应的所有UserId
+				userIds = appFeedService.queryAllUserIdsByCircleId(circleId);
+
+				for (Long userId : userIds) {
+					List<String> SNs = new ArrayList<String>();
+					Map<String, Object> map = new HashMap<String, Object>();
+					
+					map.put("userId", userId);
+					map.put("circleId", circleId);
+					
+					// 查询出每个userId下分享的sn
+					SNs = appFeedService.queryAllSnByUserId(map);
+					userIdSnMap.put(userId, SNs);
+				}
+				sharedSnMap.put(circleId, userIdSnMap);
+			}
+
+			queryEventsMap.put("start_time", startTime);
+			queryEventsMap.put("end_time", endTime);
+
+			// 《查询家庭组事件》
+			// event的值是circle或者null时，分16种情况（time、model和device_class值的综合判断）
+			if ("circle".equals(event) || event == null || event.trim().equals("")) {
+				// 得到指定的家庭组的id
+				String circleId = (String) filterParamMap.get("circle");
+				Long circle_id = 0L;
+				if (circleId != null) {
+					circle_id = Long.valueOf(circleId);
+					// 容错处理：对比获取到的circleId是否在sharedSnMap大集合里
+					if (!circleIds.contains(circle_id)) {
+						logger.info("**********请求用户所在的所有家庭组中无此家庭组id：" + circle_id + "**********");
+						return new ResponseEntity<String>(sReturn, HttpStatus.OK);
+					}
+				}
+
+				queryEventsMap.put("circleId", circle_id);
+				// 查询请求用户所在家庭组的所有用户对应的所有摄像头的事件（告警）信息 （包含第1~8种情况）
+				if (circleId == null || circleId.trim().equals("")) {
+					// 包含第1~4种情况
+					if (startTime != null && endTime != null && !startTime.equals("") && !endTime.equals("")) {
+						queryEventsMap.put("userId", requestUserId);
+						queryEventsMap.put("deviceClass", deviceClass);
+						queryEventsMap.put("model", model);
+						// 查询该用户所在的所有家庭组的所有用户对应的摄像头的事件（告警）信息
+						eventsList = appFeedService.queryRelativeCircleEventsByUserId(queryEventsMap);
+						if (eventsList == null) {
+							logger.info("******************该用户(userId为" + requestUserId
+									+ ")查询所在的所有家庭组的所有用户对应的摄像头的事件（告警）信息为null");
+						}
+
+						Map<String, Object> queryMap = new HashMap<String, Object>();
+						queryMap.put("start_time", startTime);
+						queryMap.put("end_time", endTime);
+						queryMap.put("userId", requestUserId);
+						queryMap.put("deviceClass", deviceClass);
+						queryMap.put("model", model);
+
+						userInfoList = appFeedService.queryRelativeCircleUserInfoByUserIdAndTimeLimited(queryMap);
+						if (userInfoList == null) {
+							logger.info("该用户(userId为" + requestUserId
+									+ ")所在的家庭组下查询不到对应的userInfo用户信息************************");
+						}
+
+						// 查询与事件相关的所有摄像头设备的信息。
+						deviceInfoList = appFeedService.queryRelativeCircleDeviceInfoByUserIdAndTimeLimited(queryMap);
+						if (deviceInfoList == null) {
+							logger.info("该用户(userId为" + requestUserId
+									+ ")对应的家庭组的所有成员下查询不到对应的deviceInfo设备信息************************");
+						}
+
+					}
+
+					// 包含第5~8种情况
+					if (startTime == null || endTime == null || startTime.equals("") || endTime.equals("")) {
+						queryEventsMap.put("userId", requestUserId);
+						queryEventsMap.put("deviceClass", deviceClass);
+						queryEventsMap.put("model", model);
+						// 查询该用户所在的所有家庭组的所有用户对应的摄像头的离当前时间最近的50条事件（告警）信息
+						eventsList = appFeedService.queryLatest50RelativeCircleEventsByUserId(queryEventsMap);
+						if (eventsList == null) {
+							logger.info("******************该用户(userId为" + requestUserId
+									+ ")查询所在的所有家庭组的所有用户对应的摄像头的事件（告警）信息为null");
+						}
+
+						// 查询与事件相关的所有user的信息。
+						userInfoList = appFeedService.queryRelativeCircleUserInfoByUserId(queryEventsMap);
+						if (userInfoList == null) {
+							logger.info("该用户(userId为" + requestUserId
+									+ ")所在的家庭组下查询不到对应的userInfo用户信息************************");
+						}
+
+						// 查询与事件相关的所有摄像头设备的信息。
+						deviceInfoList = appFeedService.queryRelativeCircleDeviceInfoByUserId(queryEventsMap);
+						if (deviceInfoList == null) {
+							logger.info("该用户(userId为" + requestUserId
+									+ ")对应的家庭组的所有成员下查询不到对应的deviceInfo设备信息************************");
+						}
+					}
+					try {
+						sReturn = this.responseEventsXml(eventsList, userInfoList, deviceInfoList);
+					} catch (Exception e) {
+
+						sReturn = XmlUtil.mapToXmlError("QueryHistoryEventDynamic", "0x50020110");
+
+					}
+					return new ResponseEntity<String>(sReturn, HttpStatus.OK);
+				}
+
+				// 查询指定家庭组下所有用户对应的所有摄像头的事件（告警）信息 （包含第9~16种情况）
+				if (circleId != null) {
+					// 包含第9~12种情况
+					if (startTime != null && endTime != null && !startTime.equals("") && !endTime.equals("")) {
+						queryEventsMap.put("deviceClass", deviceClass);
+						queryEventsMap.put("model", model);
+						eventsList = appFeedService.queryEventsByCircleId(queryEventsMap);
+						if (eventsList == null) {
+							logger.info("******************查询指定的家庭组" + circleId + "下所有用户对应的摄像头的事件（告警）信息为null");
+						}
+
+						userInfoList = appFeedService.queryUserInfoByCircleIdAndTimeLimited(queryEventsMap);
+						if (userInfoList == null) {
+							logger.info("******************在指定的家庭组" + circleId + "下查询到的UserInfo信息为null");
+						}
+
+						deviceInfoList = appFeedService.queryDeviceInfoByCircleIdAndTimeLimited(queryEventsMap);
+						if (deviceInfoList == null) {
+							logger.info("******************在指定的家庭组" + circleId + "所有的成员对应deviceInfo信息为null");
+						}
+
+					}
+					// 包含第13~16种情况
+					if (startTime == null || endTime == null || startTime.equals("") || endTime.equals("")) {
+						queryEventsMap.put("deviceClass", deviceClass);
+						queryEventsMap.put("model", model);
+						eventsList = appFeedService.queryLatest50EventsByCircleId(queryEventsMap);
+						if (eventsList == null) {
+							logger.info("******************查询指定的家庭组" + circleId + "下所有用户对应的摄像头的事件（告警）信息为null");
+						}
+
+						userInfoList = appFeedService.queryUserInfoByCircleId(queryEventsMap);
+						if (userInfoList == null) {
+							logger.info("******************在指定的家庭组" + circleId + "下查询到的UserInfo信息为null");
+						}
+
+						deviceInfoList = appFeedService.queryDeviceInfoByCircleId(queryEventsMap);
+						if (deviceInfoList == null) {
+							logger.info("******************在指定的家庭组" + circleId + "所有的成员对应deviceInfo信息为null");
+						}
+
+					}
+
+					try {
+
+						sReturn = this.responseEventsXml(eventsList, userInfoList, deviceInfoList);
+					} catch (Exception e) {
+						sReturn = XmlUtil.mapToXmlError("QueryHistoryEventDynamic", "0x50020110");
+					}
+					return new ResponseEntity<String>(sReturn, HttpStatus.OK);
+				}
+
+			}
+
+			// 《查询指定用户事件》 event的值是user时，分八种情况（time、model和device_class值的综合判断）
+			if ("user".equals(event)) {
+				// 容错处理
+				if (filterParamMap.get("user") == null) {
+					logger.warn("********当event为user时，获取的userId为null。请求报文出错！********");
+					sReturn = this.responseErrorEventsXml();
+					return new ResponseEntity<String>(sReturn, HttpStatus.OK);
+				}
+
+				// 得到指定的userId（不是请求该接口的userId）
+				Long userId = Long.valueOf((String) filterParamMap.get("user"));
+
+				Collection<Map<Long, List<String>>> collection = sharedSnMap.values();
+				Iterator<Map<Long, List<String>>> iterator = collection.iterator();
+				Set<Long> set = new HashSet<Long>();
+				List<Long> userIdList = new ArrayList<Long>();
+
+				while (iterator.hasNext()) {
+					Map<Long, List<String>> map = iterator.next();
+					set = map.keySet();
+					Iterator<Long> userIdIterator = set.iterator();
+					while (userIdIterator.hasNext()) {
+						Long userId1 = userIdIterator.next();
+						userIdList.add(userId1);
+					}
+				}
+
+				if (!userIdList.contains(userId)) {
+					logger.info("**********请求用户所在的所有家庭组下的所有用户中不存在该用户" + userId + "**********");
+					return new ResponseEntity<String>(sReturn, HttpStatus.OK);
+				}
+
+				// 包含第一、二、三、四种情况
+				if (startTime != null && endTime != null && !startTime.equals("") && !endTime.equals("")) {
+					queryEventsMap.put("userId", userId);
+					queryEventsMap.put("deviceClass", deviceClass);
+					queryEventsMap.put("model", model);
+
+					// 查询指定时间段，指定user下摄像头的事件
+					eventsList = appFeedService.queryEventsByUserId(queryEventsMap);
+					if (eventsList == null) {
+						logger.info("******************该用户（userId为" + userId
+								+ ")对应的摄像头查询到事件信息为null************************");
+					}
+
+					userInfoList = appFeedService.queryUserInfoByUserIdAndTimeLimited(queryEventsMap);
+					if (userInfoList == null) {
+						logger.info("******************该用户" + userId + "下查询到的UserInfo信息为null");
+					}
+
+					deviceInfoList = appFeedService.queryDeviceInfoByUserIdAndTimeLimited(queryEventsMap);
+					if (deviceInfoList == null) {
+						logger.info("******************该用户" + userId + "下查询到对应的deviceInfo设备信息为null");
+					}
+
+				}
+				// 包含第五、六、七、八种情况
+				if (startTime == null || endTime == null || startTime.equals("") || endTime.equals("")) {
+
+					queryEventsMap.put("userId", userId);
+					queryEventsMap.put("deviceClass", deviceClass);
+					queryEventsMap.put("model", model);
+					// 当event为device、time为null时查出最近的50条事件记录
+					eventsList = appFeedService.queryLatest50EventsByUserId(queryEventsMap);
+					if (eventsList == null) {
+						logger.info("******************该用户（userId为" + userId
+								+ ")对应的摄像头查询到事件信息为null************************");
+					}
+
+					userInfoList = appFeedService.queryUserInfoByUserId(queryEventsMap);
+					if (userInfoList == null) {
+						logger.info("******************该用户" + userId + "下查询到的UserInfo信息为null");
+					}
+
+					deviceInfoList = appFeedService.queryDeviceInfoByUserId(queryEventsMap);
+					if (deviceInfoList == null) {
+						logger.info("******************该用户" + userId + "下查询到对应的deviceInfo设备信息为null");
+					}
+				}
+
+				try {
+
+					sReturn = this.responseEventsXml(eventsList, userInfoList, deviceInfoList);
+				} catch (Exception e) {
+					sReturn = XmlUtil.mapToXmlError("QueryHistoryEventDynamic", "0x50020110");
+				}
+				return new ResponseEntity<String>(sReturn, HttpStatus.OK);
+			}
+
+			// 《查询指定设备事件》 event的值是device时，分八种情况（time、model和device_class值的综合判断）
+			if ("device".equals(event)) {
+				// 获取指定sn下的事件(告警)信息
+				String sn = (String) filterParamMap.get("device");
+				queryEventsMap.put("sn", sn);
+
+				// 容错处理：对比获取到的sn是否在sharedSnMap大集合里
+				Collection<Map<Long, List<String>>> collection = sharedSnMap.values();
+
+				Iterator<Map<Long, List<String>>> iterator = collection.iterator();
+				Set<Long> set = new HashSet<Long>();
+				List<String> snList = new ArrayList<String>();
+				while (iterator.hasNext()) {
+					Map<Long, List<String>> map = iterator.next();
+					set = map.keySet();
+					Iterator<Long> userIdIterator = set.iterator();
+					while (userIdIterator.hasNext()) {
+						Long userId = userIdIterator.next();
+						List<String> list = map.get(userId);
+						for (String SN : list) {
+							snList.add(SN);
+						}
+					}
+				}
+
+				if (!snList.contains(sn)) {
+					logger.info("**********请求用户所在的所有家庭组下的所有用户中不存在该sn:" + sn + "**********");
+					return new ResponseEntity<String>(sReturn, HttpStatus.OK);
+				}
+				// 包含第一、二、三、四种情况
+				if (startTime != null && endTime != null && !startTime.equals("") && !endTime.equals("")) {
+					queryEventsMap.put("deviceClass", deviceClass);
+					queryEventsMap.put("model", model);
+					eventsList = appFeedService.queryEventsBySn(queryEventsMap);
+					if (eventsList == null) {
+						logger.info("******************该设备sn为" + sn + "下查询到的事件信息为null");
+					}
+
+					userInfoList = appFeedService.queryUserInfoBySnAndTimeLimited(queryEventsMap);
+					if (userInfoList == null) {
+						logger.info("******************该设备sn为" + sn + "下查询到对应的用户信息为null");
+					}
+
+					deviceInfoList = appFeedService.queryDeviceInfoBySnAndTimeLimited(queryEventsMap);
+					if (deviceInfoList == null) {
+						logger.info("******************该设备sn为" + sn + "下查询到的deviceInfo信息为null");
+					}
+
+				}
+				// 包含第五、六、七、八种情况
+				if (startTime == null || endTime == null || startTime.equals("") || endTime.equals("")) {
+					queryEventsMap.put("deviceClass", deviceClass);
+					queryEventsMap.put("model", model);
+					// 当event为device、time为null时查出最近的50条事件记录
+					eventsList = appFeedService.queryLatest50EventsBySn(queryEventsMap);
+					if (eventsList == null) {
+						logger.info("******************该设备sn为" + sn + "下查询到的事件信息为null");
+					}
+
+					userInfoList = appFeedService.queryUserInfoBySn(queryEventsMap);
+					if (userInfoList == null) {
+						logger.info("******************该设备sn为" + sn + "下查询到对应的用户信息为null");
+					}
+
+					deviceInfoList = appFeedService.queryDeviceInfoBySn(queryEventsMap);
+					if (deviceInfoList == null) {
+						logger.info("******************该设备sn为" + sn + "下查询到的deviceInfo信息为null");
+					}
+
+				}
+
+				try {
+
+					sReturn = this.responseEventsXml(eventsList, userInfoList, deviceInfoList);
+				} catch (Exception e) {
+					sReturn = XmlUtil.mapToXmlError("QueryHistoryEventDynamic", "0x50020110");
+				}
+				return new ResponseEntity<String>(sReturn, HttpStatus.OK);
+
+			}
+
+		}
+
+		// 动态数据的过滤器 分八种情况（dynamicType和deviceClass值的综合判断）
+		if ("dynamic".equals(item)) {
+			// 做容错处理
+			if (startTime == null || startTime.trim().equals("")) {
+				logger.error("********startTime为null。请求报文出错！********");
+				sReturn = this.responseErrorEventsXml();
+				return new ResponseEntity<String>(sReturn, HttpStatus.OK);
+			}
+
+			// 做容错处理
+			if (endTime == null || endTime.trim().equals("")) {
+				logger.error("********endTime为null。请求报文出错！********");
+				sReturn = this.responseErrorEventsXml();
+				return new ResponseEntity<String>(sReturn, HttpStatus.OK);
+			}
+
+			Map<String, String> dynamicParamMap = new HashMap<String, String>();
+			List<DeviceDynamic> deviceDynamicList = new ArrayList<DeviceDynamic>();
+
+			// 容错处理
+			if (filterParamMap.get("SampleInterval") == null) {
+				logger.error("********获取到的SampleInterval参数为null。请求报文出错！********");
+				sReturn = this.responseErrorEventsXml();
+				return new ResponseEntity<String>(sReturn, HttpStatus.OK);
+			}
+			// 获得求平均值的间隔长度
+			int sampleInterval = Integer.parseInt((String) filterParamMap.get("SampleInterval"));
+
+			// 获取摄像头的SN
+			String sn = (String) filterParamMap.get("device");
+			logger.info("********************获取到的sn的值是：" + sn);
+			if (sn == null) {
+				logger.info("**********请求参数sn为null**********");
+				return new ResponseEntity<String>(sReturn, HttpStatus.OK);
+			}
+			// 获取到查询动态参数的类型
+			String dynamicType = (String) filterParamMap.get("dynamic");
+			dynamicParamMap.put("sn", sn);
+			dynamicParamMap.put("startTime", startTime);
+			dynamicParamMap.put("endTime", endTime);
+			// dynamic的值为null时，分两种情况
+			if (dynamicType == null || dynamicType.trim().equals("")) {
+				// 第一种情况
+				if (deviceClass == null || deviceClass.trim().equals("")) {
+					dynamicParamMap.put("deviceClass", null);
+					// 查询出符合时间要求的动态数据
+					deviceDynamicList = appFeedService.querySensorDynamicInfoBySnAndTime(dynamicParamMap);
+				}
+				// 第二种情况
+				if (deviceClass != null) {
+					dynamicParamMap.put("deviceClass", deviceClass);
+					deviceDynamicList = appFeedService.querySensorDynamicInfoBySnAndTime(dynamicParamMap);
+				}
+
+			}
+
+			// dynamic的值不为null时，分六种情况
+			if (dynamicType != null) {
+				// 获得查询动态数据的类型
+				dynamics = dynamicType.split(",");
+				// >1 表示查温度和湿度
+				if (dynamics.length > 1) {
+					// 第一种情况
+					if (deviceClass == null || deviceClass.trim().equals("")) {
+						dynamicParamMap.put("deviceClass", null);
+						// 查询出符合时间要求的动态数据
+						deviceDynamicList = appFeedService.querySensorDynamicInfoBySnAndTime(dynamicParamMap);
+					}
+					// 第二种情况
+					if (deviceClass != null) {
+						dynamicParamMap.put("deviceClass", deviceClass);
+						deviceDynamicList = appFeedService.querySensorDynamicInfoBySnAndTime(dynamicParamMap);
+					}
+				}
+
+				// =1 表示只查其中一种（温度或者湿度）
+				if (dynamics.length == 1) {
+					dynamic = dynamics[0];
+					// 第三和第四种情况
+					if (deviceClass == null || deviceClass.trim().equals("")) {
+						dynamicParamMap.put("deviceClass", null);
+						// 查询出符合时间要求的动态数据
+						deviceDynamicList = appFeedService.querySensorDynamicInfoBySnAndTime(dynamicParamMap);
+					}
+					// 第五和第六种情况
+					if (deviceClass != null) {
+						dynamicParamMap.put("deviceClass", deviceClass);
+						deviceDynamicList = appFeedService.querySensorDynamicInfoBySnAndTime(dynamicParamMap);
+					}
+				}
+			}
+
+			// 用作判断时间范围，时间左区间初始化
+			Date leftTime = strToDate(startTime);
+			// 用作判断时间范围，时间右区间初始化
+			Date rightTime = addDate(strToDate(startTime), sampleInterval);
+			List<DeviceDynamic> dynamicDataList = new ArrayList<DeviceDynamic>();
+			// 只要时间左区间比请求参数endTime小，则不再比较。
+			while (leftTime.compareTo(strToDate(endTime)) != 1) {
+				// 计数器：计算每个时间区间内温度或者湿度的个数
+				int count = 0;
+				float temperature = 0;
+				float averageTemperature = 0;
+				float humidity = 0;
+				float averageHumidity = 0;
+				Date middleTime = null;
+				for (DeviceDynamic deviceDynamic : deviceDynamicList) {
+					if (deviceDynamic.getDateTime().compareTo(rightTime) == -1
+							&& deviceDynamic.getDateTime().compareTo(leftTime) == 1) {
+						// 算出对应时间区间内的温度累加
+						temperature += Float.parseFloat(deviceDynamic.getTemperature());
+						// 算出对应时间区间内的湿度累加
+						humidity += Float.parseFloat(deviceDynamic.getHumidity());
+						count++;
+						logger.info("第" + count + "个**********");
+						// 取中间时间作为返回给app的时间值
+						middleTime = addDate(leftTime, sampleInterval / 2);
+					}
+				}
+
+				DeviceDynamic deviceDynamic = new DeviceDynamic();
+				if (count != 0) {
+					// 算出对应时间区间内的平均温度
+					averageTemperature = temperature / count;
+					// 小数点比较多时只保留两位
+					long averageTempe = Math.round(averageTemperature * 100); // 四舍五入
+					averageTemperature = (float) (averageTempe / 100.0); // 注意：使用 100.0 而不是 100
+					// 算出对应时间区间内的平均湿度
+					averageHumidity = humidity / count;
+					// 小数点比较多时只保留两位
+					long averageHumi = Math.round(averageHumidity * 100); // 四舍五入
+					averageHumidity = (float) (averageHumi / 100.0); // 注意：使用 100.0 而不是 100
+				}
+
+				if (deviceDynamicList.size() != 0 && count != 0) {
+					if (dynamicType == null || dynamics.length == 2 || dynamic.equalsIgnoreCase("temperature")) {
+						deviceDynamic.setTemperature("" + averageTemperature);
+					} else {
+						deviceDynamic.setTemperature("");
+					}
+					if (dynamicType == null || dynamics.length == 2 || dynamic.equalsIgnoreCase("humidity")) {
+						deviceDynamic.setHumidity("" + averageHumidity);
+					} else {
+						deviceDynamic.setHumidity("");
+					}
+					deviceDynamic.setDateTime(middleTime);
+					dynamicDataList.add(deviceDynamic);
+				}
+				// 判断的时间范围区间变化
+				leftTime = addDate(leftTime, sampleInterval);
+				rightTime = addDate(rightTime, sampleInterval);
+			}
+
+			sReturn = this.responseHistoryDynamicsXml(dynamicDataList, sn);
+			return new ResponseEntity<String>(sReturn, HttpStatus.OK);
+		}
+
+		logger.info("********app请求报文出错，请求的报文是：" + filterParamMap.toString());
+		sReturn = this.responseErrorEventsXml();
+		return new ResponseEntity<String>(sReturn, HttpStatus.OK);
+	}
+
+	/**
+	 * 返回给app的上报事件（警告）信息的响应的xml
+	 * 
+	 * @param eventsList
+	 * @param userInfoList
+	 * @param deviceInfoList
+	 * @return
+	 * @author wangming
+	 * @date 2015年10月22日
+	 * 
+	 */
+	private String responseEventsXml(List<EventsInfo> eventsList, List<UsersInfo> userInfoList,
+			List<DevicesInfo> deviceInfoList) {
+
+		String dateTime = "";
+		Date date = null;
+		Calendar calendar = null;
+
+		StringBuffer sb = new StringBuffer();
+		sb.append("<QueryHistoryEventDynamic  version=\"1.0\" xmlns=\"urn:skylight\">");
+		sb.append("<HistoryEventDynamic>");
+		if (eventsList.size() != 0) {
+			sb.append("<HistoryEvents>");
+			sb.append("<EventList>");
+			for (int i = 0; i < eventsList.size(); i++) {
+				date = eventsList.get(i).getDateTime();
+				calendar = Calendar.getInstance();
+				calendar.setTime(date);
+				// 把日期转换成ISO8601格式
+				dateTime = DateUtil.fromCalendarToISO8601(calendar);
+				sb.append("<Event>");
+				sb.append("<userId>");
+				sb.append(eventsList.get(i).getUserId());
+				sb.append("</userId>");
+				sb.append("<SN>");
+				sb.append(eventsList.get(i).getSN());
+				sb.append("</SN>");
+				sb.append("<eventId>");
+				sb.append(eventsList.get(i).getEventId());
+				sb.append("</eventId>");
+				sb.append("<eventSubType>");
+				sb.append(eventsList.get(i).getEventSubType());
+				sb.append("</eventSubType>");
+				sb.append("<extraData>");
+				sb.append("");
+				sb.append("</extraData>");
+				sb.append("<dateTime>");
+				// 事件发生的时间,以ISO8601格式
+				sb.append(dateTime);
+				sb.append("</dateTime>");
+				// 获取数据库的storeUrl
+				String storeUrl = eventsList.get(i).getPlayBackUrl();
+				if (storeUrl == null || storeUrl.trim().equals("")) {
+					sb.append("<playbackUrl>");
+					sb.append("");
+					sb.append("</playbackUrl>");
+				} else {
+					sb.append("<playbackUrl>");
+					// 获取最终CloudFront的域名地址
+					String domainAddress = SystemConfig.getProperty("instance-public-dns");
+					// 获取桶名字
+					String bucketName = SystemConfig.getProperty("aws.s3.bucket");
+					// 组装事件视频回放的playBackUrl格式：//http://[instance-public-dns]/vods3/_definst_/mp4:amazons3/mybucket/videos/coolvideos/mycoolvideo.m4v/playlist.m3u8
+					String playBackUrl = "http://" + domainAddress + "/vods3/_definst_/mp4:amazons3/" + bucketName
+							+ "/" + storeUrl + "/playlist.m3u8";
+					sb.append(playBackUrl);
+					sb.append("</playbackUrl>");
+				}
+
+				String pictureUrl = "";
+				if (storeUrl == null || storeUrl.trim().equals("")) {
+					sb.append("<pictureUrlList>");
+					sb.append("<pictureUrl>");
+
+					sb.append((eventsList.get(i).getPhotoUrl() == null)
+							|| eventsList.get(i).getPhotoUrl().trim().equals("") ? "" : eventsList.get(i).getPhotoUrl());
+
+					sb.append("</pictureUrl>");
+					sb.append("</pictureUrlList>");
+				} else {
+					sb.append("<pictureUrlList>");
+					for (int j = 1; j < 4; j++) {
+						sb.append("<pictureUrl>");
+						String[] storeUrls = storeUrl.split("/");
+						// storeUrls存储的规则格式固定，所有这里可这样取值
+						String fileNameUrl = storeUrls[6];
+						String[] fileNameUrls = fileNameUrl.split("_");
+						String fileName = fileNameUrls[1].substring(0, fileNameUrls[1].indexOf(".")) + ".jpg";
+						fileName = "video_pic" + j + "_" + fileName;
+						pictureUrl = storeUrls[0] + "/" + storeUrls[1] + "/" + storeUrls[2] + "/" + storeUrls[3] + "/"
+								+ storeUrls[4] + "/" + storeUrls[5] + "/" + fileName;
+						String s3PictureUrl = SystemConfig.getProperty("S3.aws.pic.url");
+						String mode = SystemConfig.getProperty("S3.mode");
+						pictureUrl = s3PictureUrl + "/" + mode + "/" + pictureUrl;
+						sb.append(pictureUrl);
+						sb.append("</pictureUrl>");
+					}
+					sb.append("</pictureUrlList>");
+				}
+				sb.append("</Event>");
+			}
+
+			sb.append("</EventList>");
+			sb.append("<UserInfoList>");
+			for (int i = 0; i < userInfoList.size(); i++) {
+
+				sb.append("<UserInfo>");
+				sb.append("<userId>");
+				sb.append(userInfoList.get(i).getUserId());
+				sb.append("</userId>");
+				// 判断获取到的portraintId的值
+				String portraintId = userInfoList.get(i).getPortraintId();
+				if (portraintId == null) {
+					sb.append("<portraitURI>");
+					sb.append("");
+					sb.append("</portraitURI>");
+				} else {
+					if (portraintId.trim().equals("-1")) {
+						// 表示自定义头像 要返回S3的Uri
+						String portraintUuid = userInfoList.get(i).getPortraintUuid();
+						if (portraintUuid.trim().equals("")) {
+							sb.append("<portraitURI>");
+							sb.append("-1");
+							sb.append("</portraitURI>");
+						} else {
+							try {
+								S3FileData platformFile = s3Service.getUploadFileByUuid(portraintUuid);
+								if (platformFile == null) {
+									sb.append("<portraitURI>");
+									sb.append("-1");
+									sb.append("</portraitURI>");
+								} else {
+									sb.append("<portraitURI>");
+									sb.append(platformFile.getFilePath() + platformFile.getFileName());
+									sb.append("</portraitURI>");
+								}
+							} catch (Exception e) {
+								logger.error(e.getMessage(), e);
+							}
+						}
+					} else {
+						// 表示系统头像
+						sb.append("<portraitURI>");
+						sb.append(portraintId);
+						sb.append("</portraitURI>");
+					}
+				}
+				sb.append("<Name>");
+				sb.append(userInfoList.get(i).getUserName());
+				sb.append("</Name>");
+				sb.append("<NickName>");
+				sb.append(userInfoList.get(i).getNickName());
+				sb.append("</NickName>");
+				sb.append("</UserInfo>");
+			}
+
+			sb.append("</UserInfoList>");
+			sb.append("<DeviceInfoList>");
+			for (int i = 0; i < deviceInfoList.size(); i++) {
+				sb.append("<DeviceInfo>");
+				sb.append("<SN>");
+				sb.append(deviceInfoList.get(i).getSn());
+				sb.append("</SN>");
+				sb.append("<Name>");
+				sb.append(deviceInfoList.get(i).getNickName());
+				sb.append("</Name>");
+				sb.append("<NickName>");
+				sb.append(deviceInfoList.get(i).getNickName());
+				sb.append("</NickName>");
+				sb.append("<DeviceClass>");
+				sb.append("FamilyCam");
+				sb.append("</DeviceClass>");
+				sb.append("<model>");
+				sb.append(deviceInfoList.get(i).getModel());
+				sb.append("</model>");
+				sb.append("<deviceKind>");
+				sb.append(deviceInfoList.get(i).getDeviceKind());
+				sb.append("</deviceKind>");
+				sb.append("</DeviceInfo>");
+			}
+			sb.append("</DeviceInfoList>");
+			sb.append("</HistoryEvents>");
+		}
+		sb.append("</HistoryEventDynamic>");
+		sb.append("<ResponseStatus>");
+		sb.append("<statusCode>0</statusCode>");
+		sb.append("<statusString>0</statusString>");
+		sb.append("</ResponseStatus>");
+		sb.append("</QueryHistoryEventDynamic>");
+		return sb.toString();
+	}
+
+	/**
+	 * 
+	  * responseErrorEventsXml(专用于返回错误的事件xml报文)
+	  * @Title: responseErrorEventsXml
+	  * @param  (参数说明)
+	  * @return String (返回值说明)
+	  * @throws (异常说明)
+	  * @author wangming
+	  * @date 2015年12月29日
+	 */
+	private String responseErrorEventsXml() {
+
+		StringBuffer sb = new StringBuffer();
+		sb.append("<QueryHistoryEventDynamic version=\"1.0\" xmlns=\"urn:skylight\">");
+		sb.append("<HistoryEventDynamic></HistoryEventDynamic>");
+		sb.append("<ResponseStatus>");
+		sb.append("<statusCode>1</statusCode>");
+		sb.append("<statusString>1</statusString>");
+		sb.append("</ResponseStatus>");
+		sb.append("</QueryHistoryEventDynamic>");
+		return sb.toString();
+	}
+
+	/**
+	 * 返回给app的历史动态数据信息的响应xml
+	 * 
+	 * @param dynamicList
+	 * @param SN
+	 * @return
+	 * @author wangming
+	 * @date 2015年10月26日
+	 * 
+	 */
+	private String responseHistoryDynamicsXml(List<DeviceDynamic> deviceDynamicList, String SN) {
+
+		String dateTime = "";
+		Date date = null;
+		Calendar calendar = null;
+		StringBuffer sb = new StringBuffer();
+		sb.append("<QueryHistoryEventDynamic  version=\"1.0\" xmlns=\"urn:skylight\">");
+		sb.append("<HistoryEventDynamic>");
+		if (deviceDynamicList.size() != 0) {
+			sb.append("<HistoryDynamics>");
+			sb.append("<SN>");
+			sb.append(SN);
+			sb.append("</SN>");
+			sb.append("<DeviceDynamicList>");
+			for (int i = 0; i < deviceDynamicList.size(); i++) {
+				DeviceDynamic deviceDynamic = new DeviceDynamic();
+				deviceDynamic = deviceDynamicList.get(i);
+				date = deviceDynamic.getDateTime();
+				calendar = Calendar.getInstance();
+				calendar.setTime(date);
+				// 把日期转换成ISO8601格式
+				dateTime = DateUtil.fromCalendarToISO8601(calendar);
+				sb.append("<DeviceDynamic>");
+				sb.append("<dateTime>");
+				sb.append(dateTime);
+				sb.append("</dateTime>");
+				sb.append("<Temperature>");
+				sb.append(deviceDynamicList.get(i).getTemperature());
+				sb.append("</Temperature>");
+				sb.append("<Humidity>");
+				sb.append(deviceDynamicList.get(i).getHumidity());
+				sb.append("</Humidity>");
+				sb.append("</DeviceDynamic>");
+			}
+			sb.append("</DeviceDynamicList>");
+			sb.append("</HistoryDynamics>");
+		}
+		sb.append("</HistoryEventDynamic>");
+		sb.append("<ResponseStatus>");
+		sb.append("<statusCode>0</statusCode>");
+		sb.append("<statusString>0</statusString>");
+		sb.append("</ResponseStatus>");
+		sb.append("</QueryHistoryEventDynamic>");
+		return sb.toString();
+	}
+
+	/**
+	 * 把字符串形式的ISO8601时间转换为Date类型时间
+	 * 
+	 * @param ISO8601Time
+	 * @author wangming
+	 * @date 2015年11月11日
+	 * @return
+	 */
+	private Date strToDate(String ISO8601Time) {
+		// 2015-10-07T10:10:20+08:00
+		String strdate = ISO8601Time.substring(0, 10);
+		String strtime = " " + ISO8601Time.subSequence(11, 18);
+
+		SimpleDateFormat formater = new SimpleDateFormat(DateUtil.DATE_TIME_1_FULL_FORMAT);
+		Date date = null;
+		try {
+			date = formater.parse(strdate + strtime);
+		} catch (ParseException e) {
+			logger.error(e.getMessage(), e);
+		}
+		return date;
+	}
+
+	/**
+	 * 时间相加
+	 * 
+	 * @param date
+	 * @param seconds
+	 * @author wangming
+	 * @date 2015年11月11日
+	 * @return
+	 */
+	private Date addDate(Date date, int seconds) {
+		Calendar c = Calendar.getInstance();
+		c.setTime(date);
+		c.add(Calendar.SECOND, seconds);
+		return c.getTime();
+	}
+
+}

@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:task="http://www.springframework.org/schema/task"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans
+		http://www.springframework.org/schema/beans/spring-beans-3.2.xsd
+		http://www.springframework.org/schema/context
+		http://www.springframework.org/schema/context/spring-context-3.2.xsd
+		http://www.springframework.org/schema/task
+        http://www.springframework.org/schema/task/spring-task.xsd">
+	<!-- 引入属性文件 -->
+	<!--  <context:property-placeholder location="classpath:config\config.properties" /> -->
+	
+	<!-- 自动扫描(自动注入) -->
+	<context:component-scan base-package="com.skl.cloud.service" />
+	
+	<!-- 支持异步方法执行 -->
+    <task:annotation-driven/>
+	
+	<bean class="com.skl.cloud.foundation.remote.AutowiredSKLRemoteAnnotationProcessor"/>
+
+	<bean class="com.skl.cloud.common.spring.BeanLocator" scope="singleton" />
+
+	<bean id="jaxb2Marshaller" class="com.skl.cloud.common.xml.Jaxb2Marshaller">
+		<property name="packagesToScan">
+			<list>
+				<value>com.skl.cloud.model</value>
+				<value>com.skl.cloud.controller.**.dto</value>				
+				<value>com.skl.cloud.remote.**.dto</value>				
+			</list>
+		</property>
+		<property name="assignableClassesToScan">
+			<list>
+				<value>com.skl.cloud.common.entity.IEntity</value>
+			</list>
+		</property>
+	</bean>
+
+	<beans profile="aws-cn-dev">  
+        <context:property-placeholder location="classpath:config\aws-cn-dev\config.properties"/>  
+    </beans>  
+    <beans profile="aws-cn-ste">  
+        <context:property-placeholder location="classpath:config\aws-cn-ste\config.properties"/>  
+    </beans>  
+    <beans profile="aws-sg-ste">  
+        <context:property-placeholder location="classpath:config\aws-sg-ste\config.properties"/>  
+    </beans>  
+    <beans profile="local">  
+        <context:property-placeholder location="classpath:config\local\config.properties"/>  
+    </beans>  
+    <beans profile="local-dev">  
+        <context:property-placeholder location="classpath:config\local-dev\config.properties"/>  
+    </beans> 
+    <beans profile="local-ste">  
+        <context:property-placeholder location="classpath:config\local-ste\config.properties"/>  
+    </beans>  
+    <beans profile="local-test">  
+        <context:property-placeholder location="classpath:config\local-test\config.properties"/>  
+    </beans>   
+
+</beans>

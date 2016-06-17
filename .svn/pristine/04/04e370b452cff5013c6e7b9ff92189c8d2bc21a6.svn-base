@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.skl.cloud.dao.audio.AudioPlayListMapper">
+     <!-- 查询定IPC设备的音乐文件列表信息 -->
+	<select id="getAudioPlayList" resultType="java.util.Map" parameterType="com.skl.cloud.model.S3FileData">
+		SELECT
+			a.uuid AS uuid,
+			a.display_name AS displayName,
+			a.camera_serialno AS sn,
+			a.active_flag AS activeFlag,
+			a.picture_id AS pictureId,
+			a.status AS status,
+			a.sequence as sequence,
+			a.create_time AS createTime,
+			a.change_time AS changeTime,
+			b.file_name AS fileName,
+			b.file_size AS fileLen,
+			b.file_path AS fileUrl
+		FROM
+			t_platform_audio_play a,
+			t_platform_s3_file_data b
+		WHERE
+		    a.uuid = b.service_uuid
+		    <if test="uuid !=null ">
+				and b.service_uuid = #{uuid}
+			</if>
+			<if test="deviceSn !=null ">
+				and b.camera_serialno = #{deviceSn}
+			</if>
+			<if test="filePath !=null ">
+				and b.file_path = #{filePath}
+			</if>
+			<if test="fileName !=null ">
+				and b.file_name = #{fileName}
+			</if>
+	</select>
+	
+	<!-- 删除指定IPC设备的音乐文件列表信息-->
+	<delete id="deleteAudioPlay" parameterType="string">
+		delete
+		from
+			t_platform_audio_play
+		where
+			camera_serialno = #{0}
+	</delete>
+	
+	<!-- 删除指定IPC设备的音乐文件列表信息-->
+	<delete id="deleteAudioPlayByUuids"  parameterType="java.util.List">
+		delete
+		from
+			t_platform_audio_play
+		where
+			uuid in
+			<foreach collection="list" index="index" item="item" open="(" separator="," close=")">   
+        		#{item}   
+    		</foreach>
+	</delete>
+	
+	<!-- 更新指定IPC设备的音乐文件信息 -->
+	<update id="updateAudioPlay"  parameterType="com.skl.cloud.model.audio.AudioPlay">
+		update
+			t_platform_audio_play
+		set
+			<if test="displayName !=null ">
+				display_name = #{displayName},
+			</if>
+			<if test="activeFlag !=null ">
+				active_flag = #{activeFlag},
+			</if>
+			<if test="pictureId !=null ">
+				picture_id = #{pictureId},
+			</if>
+			<if test="status !=null ">
+				status = #{status},
+			</if>
+			<if test="sequence !=null ">
+				sequence = #{sequence},
+			</if>
+			change_time = now()
+		where
+			1=1
+			<if test="uuid !=null ">
+				and uuid = #{uuid}
+			</if>
+			<if test="sn !=null ">
+				and camera_serialno = #{sn}
+			</if>
+	</update>
+	<!-- 保存指定IPC设备的音乐文件列表信息 -->
+	<insert id="saveAudioPlay" parameterType="com.skl.cloud.model.audio.AudioPlay">
+		INSERT INTO t_platform_audio_play ( uuid, display_name, camera_serialno,
+		active_flag, picture_id, status, sequence, create_time, change_time) VALUES
+		<foreach collection="list" item="item" index="index" separator=",">
+			( #{item.uuid}, #{item.displayName}, #{item.sn},#{item.activeFlag}, 
+			#{item.pictureId}, #{item.status},#{item.sequence},#{item.createTime}, #{item.changeTime} )
+		</foreach>
+	</insert>
+</mapper>

@@ -1,0 +1,55 @@
+package com.skl.cloud.foundation.shiro.filter;
+
+import java.io.IOException;
+
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
+import javax.servlet.http.HttpServletResponse;
+
+import org.apache.shiro.subject.Subject;
+import org.apache.shiro.web.filter.AccessControlFilter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+/**
+ * 权限的拦截
+ * @author weibin
+ *
+ */
+public class CheckPermissionFilter extends AccessControlFilter {
+	
+	private static Logger log = LoggerFactory.getLogger(CheckPermissionFilter.class);
+	
+    @Override
+    protected boolean isAccessAllowed(ServletRequest request, ServletResponse response, Object mappedValue) throws Exception {
+        return false;
+    }
+
+    @Override
+    protected boolean onAccessDenied(ServletRequest request, ServletResponse response) throws Exception {
+    	try {
+    		Subject subject = getSubject(request, response);
+    		log.info("subject{}",subject);
+//    		subject.checkPermission(permission);
+    		subject.checkRole("admin");
+		} catch (Exception e) {
+			// TODO: handle exception
+			log.error("没有权限---",e);
+			onLoginFail(response);
+			return false;
+		}
+    	return true;
+    }
+
+    /**
+     * 权限判断失败，返回给用户
+     * @param response
+     * @throws IOException
+     */
+    private void onLoginFail(ServletResponse response) throws IOException {
+        HttpServletResponse httpResponse = (HttpServletResponse) response;
+        httpResponse.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        httpResponse.getWriter().write("login error");
+    }
+    
+}

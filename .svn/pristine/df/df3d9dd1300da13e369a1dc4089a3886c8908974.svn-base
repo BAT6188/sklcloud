@@ -1,0 +1,34 @@
+package com.skl.cloud.foundation.batchjob;
+
+import java.util.List;
+
+/**
+ * <p>
+ * Job processing business logic interface.
+ * 
+ * <p>Creation Date and by: 2016/03/12 Author: liyangbin
+ * 
+ * @author $Author$
+ * @version $Revision$ $Date$
+ * 
+ */
+public interface Job<T> {
+
+	/**
+	 * Prepare the data, maybe this data come from files or db.
+	 * 
+	 * @param jobContext the {@link JobContext} object
+	 * @return the data that will be processed
+	 */
+	public List<T> dataSource(JobContext jobContext);
+
+	/**
+	 * Start process business logic job.
+	 * 
+	 * @param jobContext
+	 *            the {@link JobContext} object
+	 * @throws JobException
+	 */
+	public void process(T item, JobContext jobContext);
+
+}

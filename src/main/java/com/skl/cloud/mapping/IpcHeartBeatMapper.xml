@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.skl.cloud.dao.IpcHeartBeatMapper">
+	<select id="queryIpcHeartBeat" parameterType="String"
+		resultType="Boolean">
+	<![CDATA[
+	 SELECT
+		count(t.camera_serialno) AS count
+	FROM
+		t_platform_ipcamera_sensor t
+	WHERE
+		t.camera_serialno = #{sn}
+	]]>
+	</select>
+
+	<insert id="insertIpcHeartBeat" parameterType="com.skl.cloud.model.PlatformIpcameraSensor" useGeneratedKeys="true">
+		<selectKey keyProperty="id" resultType="Long" order="BEFORE">
+			 select get_uuid_short() as id
+		</selectKey>
+    <![CDATA[ 
+		INSERT INTO t_platform_ipcamera_sensor (
+		    id,
+			camera_serialno,
+			camera_temperature,
+			camera_humidity,
+			date_time
+		)
+		VALUES(
+		    #{id},
+			#{cameraSerialno},
+			#{cameraTemperature}, 
+		    #{cameraHumidity},
+		    #{dateTime}
+		    )
+	]]>
+	</insert>
+
+
+	<update id="updateIpcHeartBeat" parameterType="com.skl.cloud.model.PlatformIpcameraSensor">
+		UPDATE
+		t_platform_ipcamera_sensor t
+		SET t.camera_temperature =
+		#{cameraTemperature},
+		t.camera_humidity = #{cameraHumidity}
+		WHERE
+		t.camera_serialno =
+		#{cameraSerialno}
+	</update>
+
+	<select id="callAvgSensorRecordsByHour" parameterType="string" statementType="CALLABLE"  
+      >  
+      {call avgSensorRecordsByOneHour(
+      #{0,jdbcType=VARCHAR,mode=IN},  
+      #{1,jdbcType=VARCHAR,mode=IN})
+        }
+    </select> 
+	
+	<select id="getLastTime" parameterType="string" resultType="java.util.Date"  
+      >  
+      select max(date_time) AS lastTime from t_platform_ipcamera_sensor a where a.camera_serialno = #{0};
+    </select>
+    
+    <select id="queryLatestIpcSensorBySn" parameterType="string" resultType="com.skl.cloud.model.PlatformIpcameraSensor">
+    <![CDATA[
+	    SELECT
+	        b.camera_serialno AS cameraSerialno,
+	        b.camera_temperature AS cameraTemperature,
+	        b.camera_humidity AS cameraHumidity
+	    FROM
+	        t_platform_ipcamera_sensor b
+	    WHERE
+	        b.camera_serialno = #{sn}
+	  ORDER BY b.date_time DESC
+	  LIMIT 0,1;
+    ]]>
+    </select> 
+	
+</mapper>

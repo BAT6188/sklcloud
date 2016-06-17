@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.skl.cloud.dao.user.WechatUserMapper">
+    <!-- result map -->
+	<resultMap id="BaseResultMap" type="com.skl.cloud.model.user.WechatUser">
+		<id column="id" property="id" jdbcType="BIGINT" />
+		<result column="user_id" property="userId" jdbcType="BIGINT" />
+		<result column="open_id" property="openId" jdbcType="VARCHAR" />
+		<result column="subscribe_flag" property="subscribeFlag" jdbcType="TINYINT" />
+		<result column="create_date" property="createDate" jdbcType="TIMESTAMP" />
+		<result column="l_upd_date" property="updateDate" jdbcType="TIMESTAMP" />
+	</resultMap>
+	
+    <!-- insert Wechat user -->
+	<insert id="insert" parameterType="com.skl.cloud.model.user.WechatUser"
+		useGeneratedKeys="true">
+		<selectKey keyProperty="id" resultType="Long" order="BEFORE">
+			 select get_uuid_short() as id
+		</selectKey>
+    <![CDATA[ 
+        INSERT INTO t_wechat_user(
+                id,
+			    user_id,
+			    open_id,
+			    subscribe_flag,
+			    create_date,
+			    l_upd_date)
+			  values(
+			    #{id},
+				#{userId},
+				#{openId},
+				#{subscribeFlag},
+				now(),
+				now()
+			   ) 
+	]]>
+	</insert>
+	
+    <!-- delete Wechat user by primary key (id)-->
+	<delete id="delete" parameterType="long">
+    <![CDATA[
+	    DELETE FROM t_wechat_user WHERE id = #{0}
+    ]]>
+	</delete>
+	
+	<!-- update wechat user data -->
+	<update id="update" parameterType="com.skl.cloud.model.user.WechatUser">
+	 <![CDATA[
+        UPDATE t_wechat_user set subscribe_flag =#{subscribeFlag}, l_upd_date=now() WHERE open_id = #{openId}
+    ]]>
+	</update>
+	
+	<!-- select Wechat user by open id-->
+	<select id="queryUserByOpenId" parameterType="string" resultMap="BaseResultMap">
+    <![CDATA[
+		SELECT
+		    id,
+		    user_id,
+            open_id,
+            subscribe_flag,
+            create_date,
+            l_upd_date
+		FROM
+		    t_wechat_user
+		WHERE
+		    open_id = #{0}    
+    ]]>
+    
+    </select>
+    <!-- select Wechat user by userId-->
+	<select id="queryUserByUserId" parameterType="long" resultMap="BaseResultMap">
+    <![CDATA[
+		SELECT
+		    id,
+		    user_id,
+            open_id,
+            subscribe_flag,
+            create_date,
+            l_upd_date
+		FROM
+		    t_wechat_user
+		WHERE
+		    user_id = #{0}    
+    ]]>
+    </select>
+    
+    <!-- select Wechat user by bind sn-->
+    <select id="queryUserByBindSn" parameterType="string" resultMap="BaseResultMap">
+    <![CDATA[
+        SELECT
+            u.id,
+            u.user_id,
+            u.open_id,
+            u.subscribe_flag,
+            u.create_date,
+            u.l_upd_date
+        FROM
+            t_wechat_user u
+            inner join t_app_user_camera c on c.user_id = u.user_id
+        WHERE c.camera_serialno = #{0};
+    ]]>
+    </select>
+    
+    <!-- check the wechat user is exist by openId -->
+    <select id="isExistUser" parameterType="string" resultType="Boolean">
+    <![CDATA[
+        SELECT
+            count(id) AS count
+        FROM
+            t_wechat_user
+        WHERE
+            open_id = #{0}
+    ]]>
+    </select>
+
+</mapper>

@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>verify</title>
+	<style type="text/css">
+	*{padding: 0;margin:0;border:0;}
+	#wrapper{
+		margin:100px auto 0;
+		width: 700px;
+	}
+	#verify{
+		display: block;
+		text-align: center;
+	}
+	#verify label{width: 80px;display:inline-block;}
+	#verify input[type="password"]{
+		border:solid 1px #BEBEBE;
+		height: 15px;
+		padding: 5px 0 5px 3px;
+		border-radius: 2px;
+	}
+	#verify .submit{
+		border:none;
+		display: inline-block;
+		height: 30px;
+		width: 50px;
+
+	}
+	#verify div{
+		padding: 10px 0;
+	}
+	</style>
+</head>
+<body>
+	<section id="wrapper">
+		<form id="verify">
+			<div>
+				<label for="password">密码：</label>
+				<input type="password" id="password"/>
+			</div>
+			<div>
+				<label for="verifyPwd">确认密码：</label>
+				<input type="password" id="verifyPwd"/>
+			</div>
+			<div>
+				<input type="submit" class="submit"/>
+			</div>
+		</form>
+	</section>
+	<script src="http://cdn.bootcss.com/jquery/1.11.3/jquery.js"></script>
+	<script type="text/javascript">
+	if($)
+	{
+		$(function()
+		{
+			$(".submit").click(function(e)
+			{
+				var url,val,searchstr,searcharr,userId,searcharr,KEY;
+				e.preventDefault();
+				
+				var password = $("#password").val();
+				var verifyPwd = $("#verifyPwd").val();
+				
+				if(password === "")
+				{
+					alert("密码不能为空！");
+					return;
+				}
+				
+				if(verifyPwd === "")
+				{
+					alert("确认密码不能为空！");
+					return;
+				}
+				
+				if(password !== verifyPwd)
+				{
+					alert("密码与确认密码不一致，请重新填写确认密码！");
+					$("#verifyPwd").val("");
+					return;
+				}
+				
+				searchstr=location.search.split("?")[1];
+				searcharr=searchstr.split("&");
+				//	if(typeof searchstr==="string" && searchstr.indexOf("userId")!=-1){
+				//			userId=searchstr.substring(searchstr.indexOf("=")+1);
+				//	}
+				$.each(searcharr,function(idx,ele)
+				{
+					if(typeof(ele)==="string")
+					{
+						if( ele.indexOf("userId")!=-1)
+						{
+							userId=decodeURIComponent(ele.split("=")[1]);
+						}else if(ele.indexOf("KEY")!=-1){
+							KEY=decodeURIComponent(ele.split("=")[1]);
+						}
+					}
+				});
+				
+				if(!userId || !KEY)
+				{
+					throw "userId or KEY is null";
+				}
+				
+				url="/sklcloud/skl-cloud/Security/AAA/users/reset/"+userId;
+				pwd=$("#password").val();
+				$.ajax({
+					url: url,
+					data:
+						{
+							userPassword:btoa(pwd),
+							KEY:KEY
+						},
+					type: "get",
+					dataType:'XML',
+					success:function(data)
+					{
+						if($("statusCode",data).text() === "0")
+						{
+							$("#password").val("");
+							$("#verifyPwd").val("");
+							alert("重置密码成功!");
+						}
+						else
+						{
+							alert("重置密码失败!");
+						}
+					},
+					error:function(err)
+					{
+						alert("重置密码失败!");
+					}
+				});
+			});
+		});
+	}
+	</script>
+</body>
+</html>

@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.skl.cloud.dao.EventScheduleMapper">
+
+
+	<!-- 设置设备是否接收云端的消息推送 -->
+	<update id="saveNotification">
+		UPDATE t_app_user_camera
+		SET user_notification = #{0}
+		WHERE
+		user_id = #{1}
+		AND camera_id = (
+		SELECT
+		i.camera_id
+		FROM
+		t_platform_ipcamera i
+		WHERE
+		i.camera_serialno = #{2}
+		)
+	</update>
+
+	<!-- 保存IPC上报的事件告警消息 -->
+	<insert id="saveEventAlertOne" parameterType="com.skl.cloud.model.EventAlert" useGeneratedKeys="true" >
+		<selectKey keyProperty="id" resultType="String" order="BEFORE">
+    		select get_uuid_short() as id
+ 		</selectKey>
+		INSERT INTO t_event_alert (id,date_time, active_post_count,
+		event_id, event_state, event_description, region_id, camera_serialno,
+		camera_model, message_url, channel_id, photo_url, store_url) VALUES
+		(#{id},#{dateTime}, #{activePostCount},
+			#{eventId}, #{eventState}, #{eventDescription},
+			#{regionId}, #{cameraSerialno}, #{cameraModel},
+			#{messageUrl}, #{channelId}, #{photoUrl}, #{storeUrl} )
+	</insert>
+
+	<!-- 查询IPC相关流服务子系统及录制时间提前量等信息 -->
+	<select id="queryTriggerVideo" resultType="com.skl.cloud.model.TriggerVideo">
+		SELECT * FROM
+		t_platform_trigger_video WHERE device_mode = #{0}
+	</select>
+	
+	<!-- 业控更新录像触发事件的状态等信息 -->
+	<update id="updateEventVideo" parameterType="java.util.Map">
+	<![CDATA[
+		UPDATE t_event_alert  SET  
+			channel_id= #{channelId},
+			file_name= #{fileName},
+			event_status= #{eventStatus}
+		WHERE
+			camera_serialno = #{sn}
+			AND date_time = #{dateTime}
+		]]>
+	</update>
+	
+	<!-- 查询事某一设备某一时间在表中的信息 -->
+	<select id="queryEventAlert" resultType="com.skl.cloud.model.EventAlert">
+		select
+		id,
+		channel_id as
+		channelId,
+		date_time as dateTime,
+		active_post_count as
+		activePostCount,
+		event_id as eventId,
+		event_state as eventState,
+		event_description as
+		eventDescription,
+		region_id as regionId,
+		camera_serialno as
+		cameraSerialno,
+		camera_model as cameraModel,
+		message_url as messageUrl,
+		file_name as fileName,
+		file_size as fileSize,
+		store_url as storeUrl,
+		event_status as eventStatus
+		from
+		t_event_alert
+		where
+		camera_serialno = #{0} and
+		channel_id = #{1} and
+		event_id = #{2} and
+		date_time = #{3}
+	</select>
+
+	<!-- 设置设备是否接收云端的消息推送 -->
+	<update id="updateNotification">
+		UPDATE t_app_user_camera
+		SET
+		user_notification = #{0},
+		enable = #{3}
+		WHERE
+		camera_id = (
+		SELECT
+		i.camera_id
+		FROM
+		t_platform_ipcamera i
+		WHERE
+		i.camera_serialno = #{1}
+		)
+		and user_id = #{2}
+	</update>
+	
+	<select id="queryDeviceShare" resultType="hashMap">
+	SELECT
+	    a.circle_id AS circleId,
+		a.member_id AS userId,
+		a.device_status AS deviceStatus,
+        a.feeds_filter_enable AS feedsFilterEnable,
+        a.notification_enable AS notificationEnable
+	FROM
+		t_app_share_device a,
+		t_platform_ipcamera b
+	WHERE
+		b.camera_serialno = #{0} and 
+		a.device_id = b.camera_id and 
+		a.feeds_filter_enable = "true" group by userId;
+	</select>
+	
+	<select id="queryUserCameraList" resultType="hashMap">
+	SELECT
+	   a.user_id as userId,
+	   a.notification as notification,
+	   a.user_logintime as userLogintime,
+	   b.enable as enable,
+	   b.user_notification as userNotification
+	FROM
+                t_app_user a,
+		t_app_user_camera b
+		
+	WHERE
+		b.camera_serialno = #{0} and
+		a.user_id = b.user_id ;
+	</select>
+	
+		<!-- 根据id查询字段 -->
+	<select id="queryEventAlertById" resultType="com.skl.cloud.model.EventAlert">
+		select
+		id,
+		channel_id as
+		channelId,
+		date_time as dateTime,
+		active_post_count as
+		activePostCount,
+		event_id as eventId,
+		event_state as eventState,
+		event_description as
+		eventDescription,
+		region_id as regionId,
+		camera_serialno as
+		cameraSerialno,
+		camera_model as cameraModel,
+		message_url as messageUrl,
+		file_name as fileName,
+		file_size as fileSize,
+		store_url as storeUrl,
+		event_status as eventStatus,
+		photo_url as photoUrl
+		from
+		t_event_alert
+		where
+		id = #{0}
+	</select>
+</mapper>

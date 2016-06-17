@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:mvc="http://www.springframework.org/schema/mvc"
+	xsi:schemaLocation="http://www.springframework.org/schema/mvc 
+		http://www.springframework.org/schema/mvc/spring-mvc-3.2.xsd
+		http://www.springframework.org/schema/beans 
+		http://www.springframework.org/schema/beans/spring-beans-3.2.xsd
+		http://www.springframework.org/schema/context 
+		http://www.springframework.org/schema/context/spring-context-3.2.xsd">
+	<!-- 自动扫描controller包下的所有类，使其认为spring mvc的控制器 -->
+	<context:component-scan base-package="com.skl.cloud.controller" />
+
+	<!-- 避免IE执行AJAX时,返回JSON出现下载文件 -->
+	<bean id="mappingJacksonHttpMessageConverter"
+		class="org.springframework.http.converter.json.MappingJackson2HttpMessageConverter">
+		<property name="supportedMediaTypes">
+			<list>
+				<value>text/html;charset=UTF-8</value>
+			</list>
+		</property>
+	</bean>
+	<mvc:default-servlet-handler />
+	<!-- 对模型视图名称的解析，即在模型视图名称添加前后缀 -->
+	<bean id="viewResolver"
+		class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+		<property name="viewClass"
+			value="org.springframework.web.servlet.view.JstlView" />
+		<property name="prefix" value="/"></property>
+		<property name="suffix" value=".html"></property>
+	</bean>
+
+	<bean id="multipartResolver"
+		class="org.springframework.web.multipart.commons.CommonsMultipartResolver">
+		<property name="defaultEncoding">
+			<value>UTF-8</value>
+		</property>
+		<property name="maxUploadSize">
+			<value>32505856</value><!-- 上传文件大小限制为31M，31*1024*1024 -->
+		</property>
+		<property name="maxInMemorySize">
+			<value>4096</value>
+		</property>
+	</bean>
+
+	<!-- Degist认证开始 -->
+	<mvc:interceptors>
+		<mvc:interceptor>
+			<mvc:mapping path="/skl-cloud/app/**" />										<!-- 需要拦截的 -->
+			<mvc:mapping path="/skl-cloud/appremote/**" />                                  <!-- 需要拦截的 -->
+			<mvc:exclude-mapping path="/skl-cloud/app/Security/AAA/users" /> 				<!-- APP用户注册不需要拦截的 -->
+			<mvc:exclude-mapping path="/skl-cloud/app/Security/AAA/users/userId" />			<!-- APP用户登录不需要拦截的 -->
+			<mvc:exclude-mapping path="/skl-cloud/app/Security/AAA/users/thirdId" />		<!-- APP用户使用第三方账户登录不需要拦截的 -->
+			<mvc:exclude-mapping path="/skl-cloud/app/Security/AAA/users/forgetPw" /> 		<!-- APP用户忘记密码不需要拦截的 -->
+			<mvc:exclude-mapping path="/skl-cloud/app/pushInfo/{id}.app" /> 		 		<!--获取事件详情不需要拦截 -->
+			<mvc:exclude-mapping path="/skl-cloud/app/Security/AAA/users/portrait.app"/> 	<!-- APP进行头像上传完成确认不需要拦截的 -->
+			<bean class="com.skl.cloud.util.interceptor.SpringMVCInterceptor" />			<!-- 自定义拦截器 -->
+		</mvc:interceptor>
+	</mvc:interceptors> 
+            
+	<!-- Degist认证结束 -->
+		
+	<!-- 解决多种返回格式问题 -->
+	<bean class="com.skl.cloud.foundation.mvc.view.PathExtensionContentNegotiatingViewResolver">
+		<property name="pathExtensionViews">
+			<map>
+				<entry key="json" >
+					<bean class="com.skl.cloud.foundation.mvc.view.FrontPathExtensionView" />
+				</entry>
+				<entry key="app">
+					<bean class="com.skl.cloud.foundation.mvc.view.AppPathExtensionView">
+						<property name="jaxb2Marshaller" ref="jaxb2Marshaller" />
+					</bean>
+				</entry>
+				<entry key="ipc">
+					<bean class="com.skl.cloud.foundation.mvc.view.IPCPathExtensionView">
+						<property name="jaxb2Marshaller" ref="jaxb2Marshaller" />
+					</bean>
+				</entry>
+				<entry key="sub">
+					<bean class="com.skl.cloud.foundation.mvc.view.SubPathExtensionView">
+						<property name="jaxb2Marshaller" ref="jaxb2Marshaller" />
+					</bean>
+				</entry>				
+			</map>
+		</property>
+	</bean>
+	
+	<mvc:annotation-driven>
+		<mvc:message-converters>
+			<bean class="org.springframework.http.converter.StringHttpMessageConverter">
+				<property name="supportedMediaTypes">
+					<list>
+						<value>application/xml;charset=UTF-8</value>
+					</list>
+				</property>
+			</bean>
+		</mvc:message-converters>
+		<mvc:argument-resolvers>
+			<bean class="com.skl.cloud.foundation.mvc.method.SKLModelMapMethodArgumentResolver" />
+			<bean class="com.skl.cloud.foundation.mvc.method.SKLMethodArgumentResolver">
+				<property name="pathExtensionMapping">
+					<map>
+						<entry key="json" value="json" />
+						<entry key="app" value="xml" />
+						<entry key="ipc" value="xml" />	
+						<entry key="sub" value="xml" />					
+					</map>
+				</property>
+			</bean>
+		</mvc:argument-resolvers>
+	</mvc:annotation-driven>	
+
+	<bean id="validator" class="org.springframework.validation.beanvalidation.LocalValidatorFactoryBean"/>
+	<bean class="org.springframework.validation.beanvalidation.MethodValidationPostProcessor">
+	    <property name="validator" ref="validator"/>
+	</bean>
+</beans>

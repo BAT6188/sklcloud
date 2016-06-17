@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.skl.cloud.dao.LogManageMapper">
+
+	<insert id="saveLog" parameterType="com.skl.cloud.model.PlatformLog">
+		INSERT INTO t_platform_log (
+		log_id,
+		user_id,
+		sn,
+		module_name,
+		log_content,
+		log_time,
+		role_name,
+		user_ip,
+		log_type
+		)
+		VALUES
+		(
+		#{logId},
+		#{userId},
+		#{sn},
+		#{moduleName},
+		#{logContent},
+		#{logTime},
+		#{roleName},
+		#{userIP},
+		#{logType}
+		)
+	</insert>
+
+	<select id="queryLog" parameterType="com.skl.cloud.model.PlatformLog"
+		resultMap="logMap">
+		SELECT
+		t.log_id,
+		u.user_name,
+		t.module_name,
+		t.log_content,
+		DATE_FORMAT(t.log_time, '%Y-%m-%d %T') log_time,
+		t.log_type
+		FROM
+		t_platform_log t
+		LEFT JOIN t_app_user u ON t.user_id = u.user_id
+		<trim prefix="WHERE" prefixOverrides="AND|OR">
+			<if test="userName != null and userName != ''">AND u.user_name = #{userName}</if>
+			<if test="moduleName != null and moduleName != ''">AND t.module_name = #{moduleName}</if>
+			<if test="logContent != null and logContent != ''">AND t.log_content LIKE CONCAT(CONCAT('%',
+				#{logContent}),'%')</if>
+			<if test="logTimeS != null and logTimeS != ''">AND t.log_time >= #{logTimeS}</if>
+			<if test="logTimeE != null and logTimeE != ''">AND #{logTimeE} >= t.log_time</if>
+		</trim>
+	</select>
+
+	<resultMap type="com.skl.cloud.model.PlatformLog" id="logMap">
+		<id property="logId" column="log_id" />
+		<result property="userId" column="user_id" />
+		<result property="moduleName" column="module_name" />
+		<result property="logContent" column="log_content" />
+		<result property="logTime" column="log_time" />
+		<result property="logType" column="log_type" />
+
+		<association property="appUser" javaType="com.skl.cloud.model.user.AppUser">
+			<id property="id" column="user_id" />
+			<result property="name" column="user_name" />
+		</association>
+	</resultMap>
+
+</mapper>

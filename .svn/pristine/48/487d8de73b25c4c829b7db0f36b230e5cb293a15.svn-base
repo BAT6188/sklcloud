@@ -1,0 +1,162 @@
+package com.skl.cloud.model.job;
+
+import java.io.Serializable;
+import java.util.Date;
+
+/**
+ * <p>Job Model. </p>
+ * 
+ * <p>Creation Date and by: 2016/03/12 Author: liyangbin </p>
+ * 
+ * @author $Author$
+ * @version $Revision$ $Date$
+ */
+public class JobDefinitionBean implements Serializable {
+
+	private static final long serialVersionUID = 6814181640989871623L;
+	
+	private Long jobId;
+	
+	private String jobName;
+	
+	private String jobDesc;
+	
+	private boolean startFlag;
+	
+	private int durationSeconds;
+	
+	private Date startTime;
+	
+	private Date endTime;
+	
+	private Date createDate;
+	
+	private Date lastUpdateDate;
+
+	/**
+	 * Return the job id.
+	 */
+	public Long getJobId() {
+		return jobId;
+	}
+
+	/**
+	 * Set the job id.
+	 */
+	public void setJobId(Long jobId) {
+		this.jobId = jobId;
+	}
+
+	/**
+	 * Return the job name.
+	 */
+	public String getJobName() {
+		return jobName;
+	}
+
+	/**
+	 * Set the job name.
+	 */
+	public void setJobName(String jobName) {
+		this.jobName = jobName;
+	}
+
+	/**
+	 * Return the job desc.
+	 */
+	public String getJobDesc() {
+		return jobDesc;
+	}
+
+	/**
+	 * Set the job desc.
+	 */
+	public void setJobDesc(String jobDesc) {
+		this.jobDesc = jobDesc;
+	}
+
+	/**
+	 * Return the start flag.
+	 */
+	public boolean isStartFlag() {
+		return startFlag;
+	}
+
+	/**
+	 * Set the start flag.
+	 */
+	public void setStartFlag(boolean startFlag) {
+		this.startFlag = startFlag;
+	}
+
+	/**
+	 * Return the duration seconds.
+	 */
+	public int getDurationSeconds() {
+		return durationSeconds;
+	}
+
+	/**
+	 * Set the duration seconds.
+	 */
+	public void setDurationSeconds(int durationSeconds) {
+		this.durationSeconds = durationSeconds;
+	}
+
+	/**
+	 * Return the start time.
+	 */
+	public Date getStartTime() {
+		return startTime;
+	}
+
+	/**
+	 * Set the start time.
+	 */
+	public void setStartTime(Date startTime) {
+		this.startTime = startTime;
+	}
+
+	/**
+	 * Return the end time.
+	 */
+	public Date getEndTime() {
+		return endTime;
+	}
+
+	/**
+	 * Set the end time.
+	 */
+	public void setEndTime(Date endTime) {
+		this.endTime = endTime;
+	}
+
+	/**
+	 * Return the create date.
+	 */
+	public Date getCreateDate() {
+		return createDate;
+	}
+
+	/**
+	 * Set the create date.
+	 */
+	public void setCreateDate(Date createDate) {
+		this.createDate = createDate;
+	}
+
+	/**
+	 * Return the last update date.
+	 */
+	public Date getLastUpdateDate() {
+		return lastUpdateDate;
+	}
+
+	/**
+	 * Set the last upadate date.
+	 */
+	public void setLastUpdateDate(Date lastUpdateDate) {
+		this.lastUpdateDate = lastUpdateDate;
+	}
+
+}

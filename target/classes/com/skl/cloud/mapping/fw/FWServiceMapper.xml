@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.skl.cloud.dao.fw.FWServiceMapper">
+
+	<select id="queryCloudLatestFwVersion" parameterType="string"
+		resultType="com.skl.cloud.model.PlatformIpcfw">
+		<![CDATA[
+		select 
+		  f.id AS id,
+		  f.decversion as decversion,
+		  f.versiondate as versiondate
+		from t_platform_ipcfw f
+		  where f.model=#{0}
+		ORDER BY f.decversion DESC,f.versiondate DESC LIMIT 1
+		 ]]>
+	</select>
+
+	<select id="queryPlatformIpcfwInfo" parameterType="string"
+		resultType="com.skl.cloud.model.PlatformIpcfw">
+		<![CDATA[
+		 SELECT
+			id AS id,
+			model AS model,
+			decversion AS decversion,
+			versiondate AS versiondate,
+			md5check AS md5check,
+			verpath AS verpath,
+			length AS length
+			FROM
+			t_platform_ipcfw
+			WHERE model=#{0} and decversion=#{1}
+		  ]]>
+	</select>
+
+</mapper>

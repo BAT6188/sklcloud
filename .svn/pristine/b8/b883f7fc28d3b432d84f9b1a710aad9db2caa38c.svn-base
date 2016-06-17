@@ -1,0 +1,194 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.skl.cloud.dao.user.UserCameraMapper">
+	<resultMap id="BaseResultMap" type="com.skl.cloud.model.user.UserCamera">
+		<id column="id" property="id" jdbcType="BIGINT" />
+		<result column="user_id" property="userId" jdbcType="BIGINT" />
+		<result column="camera_id" property="cameraId" jdbcType="BIGINT" />
+		<result column="local_time" property="localTime" jdbcType="TIMESTAMP" />
+		<result column="confirm" property="confirm" jdbcType="BIT" />
+		<result column="user_notification" property="userNotification" jdbcType="VARCHAR" />
+		<result column="camera_serialno" property="cameraSerialno" jdbcType="VARCHAR" />
+		<result column="enable" property="enable" jdbcType="VARCHAR" />
+	</resultMap>
+	
+	<resultMap id="ipcResultMap" type="com.skl.cloud.model.ipc.IPCamera" >
+    <id column="camera_id" property="id" jdbcType="BIGINT" />
+    <result column="camera_serialno" property="sn" jdbcType="VARCHAR" />
+    <result column="camera_mac" property="mac" jdbcType="VARCHAR" />
+    <result column="camera_nickname" property="nickname" jdbcType="VARCHAR" />
+    <result column="camera_kind" property="kind" jdbcType="VARCHAR" />
+    <result column="camera_model" property="model" jdbcType="VARCHAR" />
+    <result column="camera_pincode" property="pincode" jdbcType="VARCHAR" />
+    <result column="camera_makedate" property="makeDate" jdbcType="TIMESTAMP" />
+    <result column="camera_version" property="version" jdbcType="VARCHAR" />
+    <result column="camera_verdate" property="versionDate" jdbcType="TIMESTAMP" />
+    <result column="camera_random" property="random" jdbcType="VARCHAR" />
+    <result column="camera_rece_ipc_random" property="receIpcRandom" jdbcType="VARCHAR" />
+    <result column="camera_send_ipc_random" property="sendIpcRandom" jdbcType="VARCHAR" />
+    <result column="camera_p2p_random" property="p2pRandom" jdbcType="VARCHAR" />
+    <result column="camera_islive" property="isLive" jdbcType="BIT" />
+    <result column="camera_isonline" property="isOnline" jdbcType="BIT" />
+    <result column="camera_status" property="status" jdbcType="BIT" />
+    <result column="camera_validate" property="validateDate" jdbcType="TIMESTAMP" />
+    <result column="camera_expired" property="expiredDate" jdbcType="TIMESTAMP" />
+    <result column="camera_offline_time" property="offlineTime" jdbcType="TIMESTAMP" />
+    <result column="camera_online_status" property="onlineStatus" jdbcType="VARCHAR" />
+    <result column="camera_time_zone" property="timeZone" jdbcType="VARCHAR" />
+    <result column="lenth" property="lenth" jdbcType="INTEGER" />
+    <result column="width" property="width" jdbcType="INTEGER" />
+    <result column="deveice_id" property="deviceId" jdbcType="VARCHAR" />
+    <result column="motion_alert_status" property="motionAlertStatus" jdbcType="TINYINT" />
+    <result column="sound_alert_status" property="soundAlertStatus" jdbcType="TINYINT" />
+    <result column="video_share_expire" property="videoShareExpire" jdbcType="BIGINT" />
+    <result column="speaker_volume" property="speakerVolume" jdbcType="BIGINT" />
+    <result column="fw_download_status" property="fwDownloadStatus" jdbcType="TINYINT" />
+    <result column="fw_download_error_reason" property="fwDownloadErrorReason" jdbcType="VARCHAR" />
+    <result column="snapshot_uuid" property="snapshotUuid" jdbcType="VARCHAR" />
+    <result column="live_share_status" property="liveShareStatus" jdbcType="TINYINT" />
+  </resultMap>
+  
+  <resultMap id="appUserResultMap" type="com.skl.cloud.model.user.AppUser">
+        <id column="user_id" property="id" jdbcType="BIGINT" />
+        <result column="user_name" property="name" jdbcType="VARCHAR" />
+        <result column="user_password" property="password" jdbcType="VARCHAR" />
+        <result column="user_kind" property="kind" jdbcType="VARCHAR" />
+        <result column="user_email" property="email" jdbcType="VARCHAR" />
+        <result column="user_status" property="status" jdbcType="BIT" />
+        <result column="user_createDate" property="createDate" jdbcType="TIMESTAMP" />
+        <result column="user_logintime" property="loginTime" jdbcType="TIMESTAMP" />
+        <result column="user_random" property="random" jdbcType="VARCHAR" />
+        <result column="user_portraint_id" property="portraintId" jdbcType="VARCHAR" />
+        <result column="user_portraint_uuid" property="portraintUuid" jdbcType="VARCHAR" />
+        <result column="cloud_random" property="cloudRandom" jdbcType="VARCHAR" />
+        <result column="user_heartbeat_time" property="heartbeatTime" jdbcType="TIMESTAMP" />
+        <result column="notification" property="notification" jdbcType="VARCHAR" />
+        <result column="user_type" property="userType" jdbcType="TINYINT" />
+        <result column="bind_flag" property="bindFlag" jdbcType="TINYINT" />
+    </resultMap>
+
+	<!-- delete the user bind camera by id -->
+	<delete id="delete" parameterType="com.skl.cloud.model.user.UserCamera">
+		delete from t_app_user_camera
+		<where>
+			<if test="cameraId !=null ">
+				camera_id = #{cameraId}
+			</if>
+			<if test="userId !=null ">
+				AND user_id = #{userId}
+			</if>
+		</where>
+	</delete>
+
+	<insert id="insert" parameterType="com.skl.cloud.model.user.UserCamera" useGeneratedKeys="true">
+		<selectKey keyProperty="id" resultType="Long" order="BEFORE">
+			 select get_uuid_short() as id
+		</selectKey>
+		insert into
+		t_app_user_camera(id,user_id,camera_id,confirm,local_time,user_notification,camera_serialno,enable)
+		values
+		(#{id},#{userId},#{cameraId},#{confirm},#{localTime},#{userNotification},#{cameraSerialno},#{enable})
+	</insert>
+	
+	<update id="update" parameterType="com.skl.cloud.model.user.UserCamera">
+        <![CDATA[
+            UPDATE t_app_user_camera 
+            SET confirm=#{confirm},
+                local_time = #{localTime},
+                user_notification = #{userNotification},
+                camera_serialno = #{cameraSerialno},
+                enable = #{enable}
+        ]]> 
+        <where>
+            1=1
+            <if test="userId !=null ">
+                AND user_id = #{userId}
+            </if>
+            <if test="cameraId !=null ">
+                AND camera_id = #{cameraId}
+            </if>
+            <if test="cameraSerialno !=null ">
+                AND camera_serialno = #{cameraSerialno}
+            </if>
+        </where>  
+    </update>
+	
+	
+	<!-- select user camera by parameter -->
+    <select id="queryUserCamera" parameterType="com.skl.cloud.model.user.UserCameraQuery"
+    resultMap="BaseResultMap">
+    <![CDATA[
+        select a.* from t_app_user_camera a
+     ]]>
+    <where>
+        <if test="cameraId !=null ">
+            a.camera_id = #{cameraId}
+        </if>
+        <if test="userId !=null ">
+            AND a.user_id = #{userId}
+        </if>
+        <if test="sn !=null ">
+            AND a.camera_serialno = #{sn}
+        </if>
+    </where>
+    </select>
+
+	<!-- select user camera by parameter -->
+	<select id="queryUserBindDeviceList" parameterType="com.skl.cloud.model.user.UserCameraQuery"
+	resultMap="ipcResultMap">
+    <![CDATA[
+        select c.* from t_platform_ipcamera c
+        inner join t_app_user_camera a on c.camera_id = a.camera_id
+     ]]>
+	<where>
+		<if test="cameraId !=null ">
+			c.camera_id = #{cameraId}
+		</if>
+		<if test="userId !=null ">
+			AND a.user_id = #{userId}
+		</if>
+		<if test="sn !=null ">
+            AND a.camera_serialno = #{sn}
+        </if>
+        <if test="deviceId !=null ">
+            AND c.deveice_id = #{deviceId}
+        </if>
+	</where>
+	</select>
+	
+	<!-- select user camera by parameter -->
+    <select id="queryIPCameraLinkedUsers" parameterType="com.skl.cloud.model.user.UserCameraQuery"
+    resultMap="appUserResultMap">
+    <![CDATA[
+        select c.* from t_app_user c
+        inner join t_app_user_camera a on c.user_id = a.user_id
+     ]]>
+    <where>
+        <if test="cameraId !=null ">
+            c.camera_id = #{cameraId}
+        </if>
+        <if test="userId !=null ">
+            AND a.user_id = #{userId}
+        </if>
+        <if test="sn !=null ">
+            AND a.camera_serialno = #{sn}
+        </if>
+    </where>
+    </select>
+
+	<select id="getUserCameraByOpenIdAndSN"  resultMap="BaseResultMap">
+		SELECT
+			a.*
+		FROM
+			t_platform_ipcamera c,
+			t_app_user_camera a,
+			t_wechat_user wu,
+			t_app_user u
+		WHERE
+			c.camera_id = a.camera_id
+		AND wu.user_id = u.user_id
+		AND u.user_id = a.user_id
+		AND wu.open_id = #{openId}
+		AND c.camera_serialno = #{sn}
+	</select>
+</mapper>

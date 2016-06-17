@@ -1,0 +1,20 @@
+#aws china deploy
+p2pHost=54.223.87.12
+p2pPort=8200
+upnpURI=elb-developer-p2p-upnp-server-1539792583.cn-north-1.elb.amazonaws.com.cn:8090
+commandSrvHost=elb-developer-cmd-center-server-119358120.cn-north-1.elb.amazonaws.com.cn
+commandSrvPort=26800
+
+#aws 
+aws.credential.key=AKIAJ2D767ICWI7FCUGQ
+aws.credential.secret=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
+aws.s3.ip=cloud.skli.biz
+aws.s3.port=8888
+aws.s3.bucket=skl-developer
+
+##third account login
+## google:   https://www.googleapis.com/plus/v1/people/me?access_token=
+url_GOOGLE = https://www.googleapis.com/oauth2/v1/tokeninfo?access_token=
+url_FACEBOOK = https://graph.facebook.com/me?access_token=
+thirdConnectTimeout = 10000
+thirdReadTimeout = 10000

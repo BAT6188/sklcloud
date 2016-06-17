@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.skl.cloud.dao.AppdeviceLinkIpcMapper">
+	<select id="querySum" parameterType="com.skl.cloud.model.user.UserCameraQuery" resultType="int">
+	<![CDATA[
+		SELECT
+		count(user_id) idSum FROM t_app_user_camera 
+	]]> 
+	<where>
+	    1=1
+        <if test="cameraId !=null ">
+            AND camera_id = #{cameraId}
+        </if>
+        <if test="linkType !=null ">
+            AND link_type = #{linkType}
+        </if>
+    </where>
+		
+	</select>
+
+	<select id="queryminId" parameterType="Long" resultType="Long">
+		select
+		  u.user_id
+		from t_app_user_camera u ,
+		t_app_user p
+		WHERE
+		u.user_id = p.user_id
+		and u.camera_id = #{cameraId}
+		and p.user_status = 0
+		ORDER BY u.local_time ASC limit 1
+	</select>
+
+</mapper>

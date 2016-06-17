@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.skl.cloud.dao.job.JobManagerMapper" >
+
+  <resultMap id="JobDefinitionResultMap" type="com.skl.cloud.model.job.JobDefinitionBean" >
+    <id column="job_id" property="jobId" jdbcType="BIGINT" />
+    <result column="job_name" property="jobName" jdbcType="VARCHAR" />
+    <result column="job_desc" property="jobDesc" jdbcType="VARCHAR" />
+    <result column="job_start_flag" property="startFlag" jdbcType="BIT" />
+    <result column="duration_secs" property="durationSeconds" jdbcType="TINYINT" />
+    <result column="start_time" property="startTime" jdbcType="TIMESTAMP" />
+    <result column="end_time" property="endTime" jdbcType="TIMESTAMP" />
+    <result column="create_date" property="createDate" jdbcType="TIMESTAMP" />
+    <result column="l_upd_date" property="lastUpdateDate" jdbcType="TIMESTAMP" />
+  </resultMap>
+
+  <select id="queryJobDefinition" parameterType="long" resultMap="JobDefinitionResultMap">
+    <![CDATA[
+    select job_id, job_name, job_desc, 
+           job_start_flag, duration_secs, start_time, 
+           end_time, create_date, l_upd_date from batch_job where job_id = #{0}
+      ]]>
+  </select>
+
+  <update id="updateJobDefinition" parameterType="com.skl.cloud.model.job.JobDefinitionBean">
+	<![CDATA[
+	   update batch_job set 
+	      start_time = #{startTime},
+	      end_time = #{endTime}, 
+	      l_upd_date = now() 
+	    where job_id = #{jobId}
+	]]>
+  </update>
+  
+  <insert id="insertJobInstance" parameterType="com.skl.cloud.model.job.JobInstanceBean" useGeneratedKeys="true">
+        <selectKey keyProperty="jobInstanceId" resultType="long" order="BEFORE">
+            select get_uuid_short() as jobInstanceId
+        </selectKey>
+    <![CDATA[
+        insert into batch_job_instance (job_instance_id, version, job_name, job_key, job_id) 
+            values (#{jobInstanceId}, #{version}, #{jobName}, #{jobKey}, #{jobId}) 
+    ]]>
+  </insert>
+  
+  <update id="updateJobInstance" parameterType="com.skl.cloud.model.job.JobInstanceBean">
+    <![CDATA[
+       update batch_job_instance set 
+           version = #{version}, 
+           job_name = #{jobName}, 
+           job_key = #{jobKey}, 
+           job_id = #{jobId} 
+       where job_instance_id = #{jobInstanceId}
+    ]]>
+  </update>
+  
+  <insert id="insertJobExecution" parameterType="com.skl.cloud.model.job.JobExecutionBean" useGeneratedKeys="true">
+        <selectKey keyProperty="jobExecutionId" resultType="long" order="BEFORE">
+            select get_uuid_short() as jobExecutionId
+        </selectKey>
+    <![CDATA[
+        insert into batch_job_execution (
+           job_execution_id, version, job_instance_id, create_time, start_time, end_time,
+           status, exit_code, exit_message, last_updated, server_name 
+           ) values (#{jobExecutionId}, #{version}, #{jobInstanceId}, now(), #{startTime}, 
+                    #{endTime}, #{status}, #{exitCode}, #{exitMessage}, #{lastUpdated}, #{serverName})
+    ]]>
+  </insert>
+  
+  <update id="updateJobExecution" parameterType="com.skl.cloud.model.job.JobExecutionBean">
+    <![CDATA[
+       update batch_job_execution set 
+          version = #{version}, 
+          job_instance_id = #{jobInstanceId}, 
+          start_time = #{startTime}, 
+          end_time = #{endTime}, 
+          status = #{status}, 
+          exit_code = #{exitCode}, 
+          exit_message = #{exitMessage}, 
+          last_updated = now(), 
+          server_name = #{serverName}
+        where job_execution_id = #{jobExecutionId} 
+    ]]>
+  </update>
+    
+  <delete id="deleteJobExecution" parameterType="long">
+        delete from batch_job_execution where job_instance_id = #{0}
+  </delete>
+  
+  <delete id="deleteJobInstance" parameterType="long">
+        delete from batch_job_instance where job_instance_id = #{0};
+  </delete>
+  
+  <select id="queryHistoricalJobInstanceIds" parameterType="int" resultType="long">
+    <![CDATA[
+        select t1.job_instance_id
+             from batch_job_instance t1
+            where not exists
+            (select 'x'
+                  from batch_job_execution
+                    where job_instance_id = t1.job_instance_id
+                       and (end_time is null or end_time > now() - #{0}))
+      ]]>
+  </select>
+	
+</mapper>

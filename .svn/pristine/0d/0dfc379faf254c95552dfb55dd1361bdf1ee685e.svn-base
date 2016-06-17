@@ -1,0 +1,257 @@
+package com.skl.cloud.util.constants;
+
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.regex.Pattern;
+
+/**
+ * @Package com.skl.cloud.common
+ * @Title: Constants
+ * @Description: 常量类 Copyright: Copyright (c) 2015 Company:深圳天彩智通软件有限公司
+ * 
+ * @author leiqiang
+ * @date 2015年7月20日
+ * @version V1.0
+ */
+public class Constants
+{
+	public enum roleType {
+		REGISTER(1, "注册角色", "用户注册后默认角色"),
+		BIND(2, "绑定角色", "用户绑定设备后默认角色"),
+		INSTALL(3, "安装角色", "用户安装设备后默认角色");
+
+		private Integer id;
+		private String name;
+		private String description;
+
+		private roleType(Integer id, String name, String description) {
+			this.id = id;
+			this.name = name;
+			this.description = description;
+		}
+
+		public Integer getId() {
+			return id;
+		}
+
+		public String getName() {
+			return name;
+		}
+
+		public String getDescription() {
+			return description;
+		}
+	}
+
+    //产品的通道ID
+    public static final String CHANNEL_ID_AIC3101 ="AIC3101";
+    public enum ipcModelType{
+    	MODEL_LFM01_0001("0001", true ,"LFM01"),
+    	MODEL_LFM01_0002("0002", true ,"LFM01"),
+    	MODEL_LFM01_0003("0003", true ,"LFM01"),
+    	MODEL_LFM01_0004("0004", true ,"LFM01"),
+    	MODEL_LFM01_0005("0005", true ,"LFM01"),
+    	MODEL_LFM01_0006("0006", true ,"LFM01"),
+        MODEL_HPC03_0103("0103", false ,"HPC03"),
+        MODEL_HPC03_0104("0104", false ,"HPC03B");
+        
+        private String type;
+        private boolean isFamiler;
+        private String kind;
+        
+		private ipcModelType(String type, boolean isFamiler,String kind){
+            this.type = type;
+            this.isFamiler = isFamiler;
+            this.kind = kind;
+        }
+        
+        public static boolean isFamilerIPC(String modelType){
+            boolean ret = false;
+            ipcModelType[] types = ipcModelType.values();
+            for(ipcModelType type: types){
+                if(type.getType().equals(modelType)){
+                    return type.isFamiler();
+                }
+            }
+            return ret;
+        }
+        
+        public static boolean isHPC03IPC(String modelType){
+        	 return MODEL_HPC03_0103.getType().equals(modelType) ? true : false;
+        }
+        
+        public static boolean isHPC03BIPC(String modelType){
+        	return MODEL_HPC03_0104.getType().equals(modelType) ? true : false;
+        }
+        
+        public static boolean isExistsIPCModel(String modelType){
+            boolean ret = false;
+            ipcModelType[] types = ipcModelType.values();
+            for(ipcModelType type: types){
+                if(type.getType().equals(modelType)){
+                    return true;
+                }
+            }
+            return ret;
+        }
+
+        public String getType() {
+            return type;
+        }
+
+        public boolean isFamiler() {
+            return isFamiler;
+        }
+        
+        /**
+		 * getter method
+		 * @return the kind
+		 */
+		public String getKind() {
+			return kind;
+		}
+    }
+    
+    /**
+     * code的常量值
+     * @ClassName: ProductFolder
+     * @author yangbin
+     * @date 2015年10月10日
+    */
+   public enum Code {
+       CODE_0(0, "0", Boolean.FALSE),
+
+       CODE_1(1, "1", Boolean.TRUE),
+
+       CODE_2(2, "2", Boolean.FALSE);
+
+       private int intValue;
+       private String StringValue;
+       private boolean booleanValue;
+
+       private Code(int intValue, String stringValue, boolean booleanValue) {
+           this.intValue = intValue;
+           this.StringValue = stringValue;
+           this.booleanValue = booleanValue;
+       }
+
+       public int getIntValue() {
+           return intValue;
+       }
+
+       public String getStringValue() {
+           return StringValue;
+       }
+
+       public boolean getBooleanValue() {
+           return booleanValue;
+       }
+   }
+   
+    public enum ServerSystemId {
+        AS_HLS(1, "hls stream access"),
+        AS_RTSP(2, "rtsp stream access"),
+        AS_LIVE(3, "live relay stream access"),//AS
+        SERVER_HLS(4, "hls stream service"),
+        SERVER_RTSP(5, "rtsp stream service"),
+        SERVER_LIVE_DISPOSE(6, "live relay stream dispose"), //LS
+        SERVER_LIVE_SERVICE(7, "live relay stream service"); //SS
+
+        private int id;
+        private String desc;
+
+        private ServerSystemId(Integer id, String desc) {
+            this.id = id;
+            this.desc = desc;
+        }
+        
+        /**
+    	 * sub system ids of rtp live
+    	 */
+    	public static final int[] RTP_LIVE_SUBSYS_ALL_IDS = {
+    		ServerSystemId.SERVER_LIVE_SERVICE.id, 
+    		ServerSystemId.SERVER_LIVE_DISPOSE.id,
+    		ServerSystemId.AS_LIVE.id
+    	};
+    	
+    	/**
+    	 * sub system ids of rtp live
+    	 */
+    	public static final int[] RTP_LIVE_SUBSYS_SSLS_IDS = {
+    		ServerSystemId.SERVER_LIVE_SERVICE.id, 
+    		ServerSystemId.SERVER_LIVE_DISPOSE.id,
+    	};
+    	
+
+        public int getId() {
+            return id;
+        }
+
+        public String getDesc() {
+            return desc;
+        }
+    }
+    
+    /**
+	 * JOB id  
+	 * 
+	 */
+	public static final class JobId{
+		/**
+		 * Clean job execution history
+		 */
+		public static final Long CLEAN_JOB_HISTORY = 9000000006L;
+		public static final Long INSERT_MES_TO_IPCAMERA = 90000000062L;
+		public static final Long MES_DATA = 90000000061L;
+	}
+	
+    /** 枚举：组成员的权限 */
+    public static enum MyCircleRole {
+        admin, user;
+    }
+
+    // Notification事件列表（事件位置与事件ID对应关系）
+    public final static Map<String, Integer> EVENT_FEATURE = new LinkedHashMap<String, Integer>() {
+        {
+            put("MotionDetection", 0); // 标准移动侦测
+            put("LenCovered", 1); // Camera遮盖触发
+            put("IntrusionDetection", 2); // 入侵检测
+            put("HumanIdentify", 3); // 人的识别
+            put("PetIdentify", 4); // 宠物的识别
+            put("FaceDetection", 5); // Face检测
+            put("AudioDetection", 6); // 声音强度超过阈值触发
+            put("YellingDetection", 7); // 大喊大叫侦测
+            put("GlassBrokenDetection", 8); // 玻璃或窗户被打碎侦测
+            put("GunShottingDetection", 9); // 枪声检测
+            put("BabyCryingDetection", 10); // Baby哭声检测
+            put("BarkingDetection", 11); // 犬吠声音检测
+            put("Front_VoiceMessage", 12); // 前端设备透过IPC上传语音
+            put("Front_FallDetection", 13); // 前端设备发来的摔倒事件上报
+            put("Front_MiscAlert", 14); // 前端设备的其他Notification
+            put("HeartBeat", 15); // 心跳上传
+            put("TemperatureAlert", 16); // 温度异常
+            put("HumidityAlert", 17); // 湿度异常
+            put("AirQualityAlert", 18); // 空气质量异常
+            put("LightSensorAlert", 19); // 光敏传感器异常
+            put("IRCutAlert", 20); // 夜视切换异常
+            put("MiscException", 21); // 设备其他异常
+            put("SoundDetection", 22); // 声音检测
+            put("TemperatureDetection", 23); // 温度检测
+            put("HumidityDetection", 24); // 湿度检测
+            put("ActivityDetection", 25); // 活动区域检测
+        }
+    };
+    
+    /** 初始化-自定义eventId校验正则 */
+    public static Pattern patternCustomEvent = null;
+    static
+    {
+        StringBuffer sb = new StringBuffer();
+        for (Entry<String, Integer> entry : Constants.EVENT_FEATURE.entrySet())
+        {
+            sb.append(entry.getKey() + "|");
+        }
+        patternCustomEvent =  Pattern.compile("^(" + sb.substring(0, sb.length() - 1) + ")$");
+    }
+}

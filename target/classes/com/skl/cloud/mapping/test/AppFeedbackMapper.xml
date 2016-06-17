@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.skl.cloud.dao.test.AppFeedbackMapper">
+
+    	<!-- insert info -->
+	<insert id="insert" parameterType="com.skl.cloud.model.test.AppFeedbackInfo"  useGeneratedKeys="true">
+        <selectKey keyProperty="id" resultType="Long" order="BEFORE">
+			 select get_uuid_short() as id
+		</selectKey>
+        <![CDATA[ 
+        INSERT INTO t_app_feedback(
+                id,
+                user_id,
+                network_type,
+                submit_name,
+                feature_item,
+                error_text,
+                create_date,
+                l_upd_date)
+              values(
+                #{id},
+                #{userId},
+                #{networkType},
+                #{submitName},
+                #{featureItem},
+                #{errorText},
+                now(),
+                now()
+               ) 
+        ]]>
+	</insert>
+
+
+</mapper>

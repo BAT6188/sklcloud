@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.skl.cloud.dao.S3Mapper">
+	<insert id="insertUploadFile" parameterType="com.skl.cloud.model.S3FileData">
+		insert into
+			t_platform_s3_file_data(service_uuid,service_type,user_id,camera_serialno,file_path,file_name,file_status,file_size,create_time,change_time)
+		values
+			(#{uuid},#{serviceType},#{userId},#{deviceSn},#{filePath},#{fileName},0,#{fileSize},now(),now())
+	</insert>
+	
+	<update id="updateUploadFile" parameterType="string">
+		update 
+			t_platform_s3_file_data
+		set 
+			file_name = #{2},
+			file_status = 1,
+			file_size = #{3},
+			change_time = now()
+		where
+			service_uuid = #{0} and
+		 	service_type = #{1}
+	</update>
+	
+	<select id="selectUploadFileListByUuids" parameterType="java.util.List" resultType="com.skl.cloud.model.S3FileData">
+		select
+			service_uuid as uuid,
+			service_type as serviceType,
+			user_id as userId,
+			camera_serialno as deviceSn,
+			file_path as filePath,
+			file_name as fileName,
+			file_size as fileSize,
+			file_status as fileStatus,
+			create_time as createTime,
+			change_time as changeTime
+		from
+			t_platform_s3_file_data
+		where
+			service_uuid in
+			<foreach collection="list" index="index" item="item" open="(" separator="," close=")">   
+        		#{item}   
+    		</foreach>
+	</select>
+	
+	<select id="selectUploadFileByPathAndName" parameterType="string" resultType="com.skl.cloud.model.S3FileData">
+		select
+			service_uuid as uuid,
+			service_type as serviceType,
+			user_id as userId,
+			camera_serialno as deviceSn,
+			file_path as filePath,
+			file_name as fileName,
+			file_size as fileSize,
+			file_status as fileStatus,
+			create_time as createTime,
+			change_time as changeTime
+		from
+			t_platform_s3_file_data
+		where
+			file_path = #{0} and file_name = #{1}
+	</select>
+	
+	<select id="selectUploadFileListBySn" parameterType="string" resultType="com.skl.cloud.model.S3FileData">
+		select
+			service_uuid as uuid,
+			service_type as serviceType,
+			user_id as userId,
+			camera_serialno as deviceSn,
+			file_path as filePath,
+			file_name as fileName,
+			file_size as fileSize,
+			file_status as fileStatus,
+			create_time as createTime,
+			change_time as changeTime
+		from
+			t_platform_s3_file_data
+		where
+			camera_serialno = #{0}
+	</select>
+	
+	
+	<select id="selectUploadFileListBySnAndServiceType" parameterType="string" resultType="com.skl.cloud.model.S3FileData">
+		select
+			service_uuid as uuid,
+			service_type as serviceType,
+			user_id as userId,
+			camera_serialno as deviceSn,
+			file_path as filePath,
+			file_name as fileName,
+			file_size as fileSize,
+			file_status as fileStatus,
+			create_time as createTime,
+			change_time as changeTime
+		from
+			t_platform_s3_file_data
+		where
+			camera_serialno = #{0} and service_type = #{1}
+	</select>
+	
+	
+	<delete id="deleteUploadFileBySn" parameterType="String">
+		delete from t_platform_s3_file_data where camera_serialno = #{0}
+	</delete>
+	
+	<delete id="deleteUploadFileByUuids" parameterType="java.util.List">
+		delete from t_platform_s3_file_data where service_uuid in
+	    <foreach collection="list" index="index" item="item" open="(" separator="," close=")">   
+        	#{item}   
+    	</foreach> 
+	</delete>
+	
+	<select id="selectBasicUrlPath" parameterType="string" resultType="string">
+		select
+		    c.url
+		from 
+		    t_platform_S3_Basic_Data c
+		where
+			c.serviceType = #{0}
+	</select>
+</mapper>

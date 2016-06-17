@@ -1,0 +1,15 @@
+#dev db
+jdbc_url=jdbc:mysql://192.168.139.216:3306/sklCloudTest?useUnicode=true&characterEncoding=UTF-8&zeroDateTimeBehavior=convertToNull
+jdbc_username=cloud
+jdbc_password=123456
+
+# SMTP server IP and Port
+mail.host=mail.sky-light.com.hk
+mail.port=25
+mail.username=cloud_admin@sky-light.com.hk
+mail.password=1234qwerasdf
+mail.encoding=utf-8
+# Mail session attributes and server authentication 
+mail.smtp.from=cloud_admin@sky-light.com.hk
+mail.smtp.auth=false
+mail.smtp.timeout=10000

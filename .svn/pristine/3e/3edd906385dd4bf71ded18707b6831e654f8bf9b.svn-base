@@ -1,0 +1,19 @@
+package com.skl.cloud.foundation.batchjob;
+
+/**
+ * <p>Job executor interface. 
+ *  
+ * <p>Creation Date and by: 2016/03/12 Author: liyangbin
+ * 
+ * @author $Author$
+ * @version $Revision$ $Date$
+ */
+public interface JobExecutor {
+	
+	/**
+	 * start a new job.
+	 * @throws JobException 
+	 */
+	public void execute(Job<?> job, JobContext jobContext); 
+
+}

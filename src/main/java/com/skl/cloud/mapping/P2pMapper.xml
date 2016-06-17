@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.skl.cloud.dao.P2pMapper">
+	<insert id="insertP2pInfo" parameterType="com.skl.cloud.model.PlatformP2p" keyProperty="camera_serialno">
+	<![CDATA[
+	insert into t_platform_p2p(
+		camera_serialno,
+		local_camera_ip,
+		mapping_camera_ip,
+		
+		msg_type,
+		createtime,
+		modifytime
+   		)
+	    values(
+		#{camera_serialno},
+	  	#{localIp},
+	  	#{mappingIp},
+	  
+	  	#{msgType},
+	  	#{createtime},
+	  	#{modifytime})
+	 ]]>
+	</insert>
+
+	<insert id="insertMappingsInfo" parameterType="java.util.List" keyProperty="camera_serialno">
+		insert into t_platform_mapping(
+		camera_serialno,
+		local_port,
+		mapping_port,
+		socket_type,
+		port_type
+		)
+		values
+		<foreach collection="list" item="item" index="index"
+			separator=",">
+			(#{item.sn},#{item.localPort},#{item.mappingPort},#{item.socketType},#{item.portType})
+		</foreach>
+	</insert>
+	
+	<delete id="deleteP2pInfoBySn" parameterType="string">
+		delete
+		from
+			t_platform_p2p
+		where
+			camera_serialno = #{0};
+	</delete>
+	
+	<delete id="deleteMappingsInfoBySn" parameterType="string">
+		delete
+		from
+			t_platform_mapping
+		where
+			camera_serialno = #{0};
+	</delete>
+	
+	<select id="queryP2pInfoBySn"  parameterType="string" resultType="com.skl.cloud.model.PlatformP2p">
+    <![CDATA[ 
+       select 
+            p.camera_serialno as camera_serialno,
+            p.local_camera_ip as localIp,
+            p.mapping_camera_ip as mappingIp,
+            p.nat_type as natType,
+            p.msg_type as msgType,
+            p.createtime as createTime,
+            p.modifytime as modifyTime  
+            from t_platform_p2p p 
+       where p.camera_serialno=#{sn}
+      ]]> 
+    </select>
+    
+    <select id="queryMappingsInfoBySn"  parameterType="string" resultType="com.skl.cloud.model.PlatformMapping">
+    <![CDATA[ 
+        select 
+            camera_serialno as sn,
+            local_port as  localPort,
+            mapping_port as mappingPort,
+            port_type as portType,
+            socket_type as socketType,
+            port_type as portType
+        from t_platform_mapping 
+        where camera_serialno=#{sn} order by mapping_port asc
+     ]]> 
+    </select>
+</mapper>

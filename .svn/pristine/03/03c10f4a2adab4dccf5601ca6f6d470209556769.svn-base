@@ -1,0 +1,474 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.skl.cloud.dao.AppMyCircleMgtMapper">
+	<!-- 家庭组（圈子）-表-增insert -->
+	<insert id="insertCircle" parameterType="com.skl.cloud.model.AppCircle"
+		useGeneratedKeys="true" keyProperty="circleId">
+		insert into
+			t_app_circle(circle_name,circle_info,circle_portrait_id,create_time,change_time)
+		values
+			(#{circleName},#{circleInfo},#{portraitId},now(),now())
+	</insert>
+	<!-- 家庭组-表-删delete -->
+	<delete id="deleteCircleById" parameterType="string">
+		delete
+		from
+			t_app_circle
+		where
+			circle_id = #{0};
+	</delete>
+	<!-- 家庭组-表-改update -->
+	<update id="updateCircle" parameterType="com.skl.cloud.model.AppCircle" >
+		update
+			t_app_circle
+		set
+			<if test="circleName !=null ">
+				circle_name = #{circleName},
+			</if>
+			<if test="portraitId !=null ">
+				circle_portrait_id = #{portraitId},
+			</if>
+			change_time = now()
+		where
+			circle_id = #{circleId}
+	</update>
+	
+	<!-- 家庭组-表-查select -->
+	<select id="getCircleByCId" parameterType="string" resultType="com.skl.cloud.model.AppCircle">
+		select
+			circle_id as circleId,
+			circle_name as circleName,
+			circle_info as circleInfo,
+			circle_portrait_id as portraitId,
+			create_time as createTime,
+			change_time as changeTime
+		from
+			t_app_circle
+		where
+			circle_id = #{0}
+	</select>
+	
+	<!-- 家庭组成员-表-增insert -->
+	<insert id="insertCircleMember" parameterType="com.skl.cloud.model.AppCircleMember">
+		insert into
+			t_app_circle_member(circle_id,member_id,member_nick_name,member_circle_role,is_new,create_time,change_time)
+		values
+			(#{circleId},#{memberId},#{memberNickName},#{memberCircleRole},#{isNew},now(),now())
+	</insert>
+	
+	<!-- 家庭组成员-表-删delete -->
+	<delete id="deleteCircleMember">
+		delete
+		from
+			t_app_circle_member
+		where
+			circle_id = #{circleId} and member_id in
+			<foreach collection="memberIds" index="index" item="item" open="(" separator="," close=")">   
+        		#{item}   
+    		</foreach>  
+	</delete>
+	
+	<!-- 家庭组成员-表-改update -->
+	<update id="updateCircleMemberRole" parameterType="string" >
+		update
+			t_app_circle_member
+		set
+			change_time = now(),
+			member_circle_role = #{2}
+		where
+			circle_id = #{0} and
+			member_id = #{1}
+			
+	</update>
+	
+	<!-- 家庭组成员-表-查select -->
+	<select id="getCircleMemberByCMId" parameterType="com.skl.cloud.model.AppCircleMember" resultType="com.skl.cloud.model.AppCircleMember">
+		select
+			circle_id as circleId,
+			member_id as memberId,
+			member_nick_name as memberNickName,
+			member_circle_role as memberCircleRole,
+			create_time as createTime,
+			change_time as changeTime,
+			is_new as isNew
+		from
+			t_app_circle_member
+	   <where>
+           <if test="circleId !=null ">
+               circle_id = #{circleId}
+           </if>
+           <if test="memberId !=null ">
+               AND member_id = #{memberId}
+           </if>
+       </where>
+	</select>
+	
+	<!-- 家庭组成员-表-查select -->
+	<select id="getCircleMemberByCIds" parameterType="java.util.List" resultType="com.skl.cloud.model.AppCircleMember">
+		select
+			circle_id as circleId,
+			member_id as memberId,
+			member_nick_name as memberNickName,
+			member_circle_role as memberCircleRole,
+			create_time as createTime,
+			change_time as changeTime,
+			is_new as isNew
+		from
+			t_app_circle_member
+	   <where>
+	   		circle_id in
+           <foreach collection="list" index="index" item="item" open="(" separator="," close=")">   
+        	#{item}   
+    		</foreach>
+       </where>
+	</select>
+	
+	<select id="getCountCircleMemberRole" parameterType="string" resultType="java.lang.Long">
+		select
+			count(*)
+		from
+			t_app_circle_member a
+		where
+			a.circle_id = #{0} and
+			a.member_circle_role = #{1}
+	</select>
+	
+	<select id="getCountAtCircle" parameterType="string" resultType="java.lang.Long">
+		select
+			count(*)
+		from
+			t_app_circle_member a
+		where
+			a.is_new = 'true' and
+			a.member_id = #{0}
+	</select>
+	
+	<!-- 设备分享表 -->
+	<insert id="insertShareDevices" parameterType="java.util.List">  
+	    insert into t_app_share_device (circle_id,member_id,device_id,stream_enable,playback_enable,notification_enable,feeds_filter_enable,device_status,create_time,change_time)  
+	    values   
+	    <foreach collection="list" item="item" index="index" separator="," >  
+	        (#{item.circleId},#{item.memberId},#{item.deviceId},#{item.streamEnable},#{item.playbackEnable},#{item.notificationEnable},#{item.feedsFilterEnable},#{item.deviceStatus},now(),now())  
+	    </foreach>  
+	</insert>
+	
+	<insert id="acceptShareDevices" parameterType="string">
+	<![CDATA[
+		insert into t_app_share_device
+		(select
+			null as id,
+			circle_id,
+			#{1} as member_id,
+			device_id,
+			stream_enable,
+			playback_enable,
+			notification_enable,
+			feeds_filter_enable,
+			"1" as device_status,
+			now() as create_time,
+			now() as change_time
+		from
+			t_app_share_device
+		where
+			device_status = 0 and
+			circle_id = #{0} and
+			member_id <> #{1} 
+		);
+	 ]]>
+	</insert>
+	
+	<delete id="deleteShareDevices">  
+	   	delete from t_app_share_device where device_id = #{deviceId} and circle_id in
+	    <foreach collection="circleIds" index="index" item="item" open="(" separator="," close=")">   
+        	#{item}   
+    	</foreach>  
+	</delete>
+	
+	<delete id="deleteShareDeviceById" parameterType="com.skl.cloud.model.AppDeviceShare">
+        delete from t_app_share_device
+        <where>
+            <if test="deviceId !=null ">
+                device_id = #{deviceId}
+            </if>
+            <if test="memberId !=null ">
+                AND member_id = #{memberId}
+            </if>
+            <if test="circleId !=null ">
+                AND circle_id = #{circleId}
+            </if>
+        </where>
+    </delete>
+	
+	<select id="getCountShareDevice" parameterType="string" resultType="java.lang.Long">
+		select
+			count(*)
+		from
+			t_app_share_device
+		where
+			device_status = 0 and
+			circle_id = #{0} 
+			<if test="param2 != null and param2 != ''">
+				and member_id = #{1}
+			</if>
+	</select> 
+	
+	<select id="getShareDevicesAtCircles" parameterType="string" resultType="hashMap">
+		select
+			a.circle_id as circleId,
+			a.circle_name as circleName,
+			case when b.stream_enable is not null then b.stream_enable else 'false' end as streamEnable,
+			case when b.playback_enable is not null then b.playback_enable else 'false' end as playbackEnable,
+			case when b.notification_enable is not null then b.notification_enable else 'false' end as notificationEnable
+		from
+			(select * from t_app_circle where circle_id in(select circle_id from t_app_circle_member where member_id = #{0})) a left join (select * from t_app_share_device where member_id = #{0} and device_id = #{1} and device_status = 0) b on a.circle_id = b.circle_id
+	</select> 
+	
+	<select id="getShareDevicesByCIds" parameterType="string" resultType="hashMap">
+		select
+			b.user_id as userId,
+			b.user_email as email,
+			b.user_name as nickName,
+			b.user_portraint_id as portraitId,
+			b.user_portraint_uuid as portraitUuid,
+			c.camera_id as deviceId,
+			c.camera_serialno as SN,
+			c.camera_model as deviceModel,
+			c.camera_kind as deviceKind,
+			c.camera_nickname as deviceName,
+			c.camera_islive as onLineStatus,
+            d.camera_temperature as temperature,
+            d.camera_humidity as humidity,
+            a.notification_enable as notificationEnable,
+            a.feeds_filter_enable as feedsFilterEnable
+		from 
+			(select * from t_app_share_device where device_status = 0 and feeds_filter_enable = 'true' and circle_id in
+				<foreach collection="list" index="index" item="item" open="(" separator="," close=")">  
+        			#{item}  
+    			</foreach> 
+			) a
+		left join 
+			t_app_user b on a.member_id = b.user_id
+		left join 
+			t_platform_ipcamera c on a.device_id = c.camera_id
+		left join 
+             t_platform_ipcamera_sensor d on  c.camera_serialno = d.camera_serialno		
+		group by userId, deviceId,notificationEnable
+		order by userId
+	</select>
+	
+	
+	<!-- 家庭组&家庭组成员-表-关联sql -->
+	<select id="getCircleListByMberId" parameterType="string" resultType="hashMap">
+		select 
+			a.member_nick_name as memberName,
+			b.user_email as email,
+			c.circle_name as circleName,
+			c.circle_portrait_id as criclePortraitId,
+			a.member_circle_role as circleRole,
+			a.member_id as userId,
+			a.is_new AS memberIsNew,
+			a.circle_id as circleId,
+			b.user_name as nickName,
+			b.user_portraint_id as portraitId,
+			b.user_portraint_uuid as portraitUuid
+		from
+			(select * from t_app_circle_member where member_id = #{0}) a
+		    left join
+		    	t_app_user b on a.member_id = b.user_id
+		  	left join
+		  		t_app_circle  c on a.circle_id = c.circle_id
+	</select>
+	
+	<select id="getCircleMemberListByCId" parameterType="string" resultType="hashMap">
+		select 
+			a.member_nick_name as memberName,
+			b.user_email as email,
+			c.circle_name as circleName,
+			a.member_circle_role as circleRole,
+			a.member_id as userId,
+			b.user_name as nickName,
+			b.user_portraint_id as portraitId,
+			b.user_portraint_uuid as portraitUuid
+		from
+			(select * from t_app_circle_member where circle_id = #{0} and is_new = "true" ORDER BY create_time ASC) a
+		    left join
+		    	t_app_user b on a.member_id = b.user_id
+		  	left join
+		  		t_app_circle  c on a.circle_id = c.circle_id
+	</select>
+	
+	<select id="getUserDevices" parameterType="string" resultType="hashMap">
+		select
+			a.member_id as userId,
+			a.device_id as deviceId,
+			b.camera_serialno as SN,
+			b.camera_model as deviceModel,
+			b.camera_kind as deviceKind,
+			b.camera_nickname as deviceName,
+			b.camera_islive as onLineStatus
+		from 
+			t_app_share_device a, 
+			t_platform_ipcamera b 
+		where
+			a.circle_id = #{0} and
+			a.member_id = #{1} and
+			a.device_id = b.camera_id
+			AND exists (select 'x' from t_app_user_camera c where 
+			    c.user_id = a.member_id and c.camera_id = a.device_id)
+			<if test="param3 != null and param3 != ''">
+				and b.camera_model like CONCAT(#{2},'%')  
+			</if>
+		group by deviceId
+	</select>
+	<select id="getOwnDeviceByUserSn" parameterType="string" resultType="hashMap">
+		select 
+			b.camera_id as deviceId,
+			a.camera_model as deviceModel,
+			b.user_id as userId,
+			b.confirm as confirm,
+			b.local_time as localTimes,
+			b.user_notification as userNotification,
+			a.camera_serialno as sn
+		from
+			t_platform_ipcamera a,
+			t_app_user_camera b
+		where
+			a.camera_serialno = #{1} and
+			a.camera_id = b.camera_id and
+			b.user_id = #{0}
+	</select>
+	<select id="getDeviceInfoBySn" parameterType="string" resultType="hashMap">
+		select 
+			a.camera_id as deviceId,
+			a.camera_model as deviceModel,
+			a.camera_serialno as sn
+		from
+			t_platform_ipcamera a
+		where
+			a.camera_serialno = #{0}
+	</select>
+	
+	<update id="joinInCircle" parameterType="hashMap" >
+		update 
+		t_app_circle_member 
+		set is_new = 'true' 
+		WHERE circle_id =  #{circleId}  
+		and 
+		member_id = #{userId}
+			
+	</update>
+	
+	<select id="queryTotalNumOfAdmin" parameterType="string" resultType="int">
+		SELECT 
+			COUNT(member_id) 
+		from 
+			t_app_circle_member 
+		WHERE 
+			circle_id = #{0}
+		AND 
+		member_circle_role = 'admin'
+	</select>
+	
+	<select id="queryFareDeviceInfoBysn" parameterType="string" resultType="hashMap">
+	
+	SELECT
+	f.circle_id AS CircleId,
+	a.circle_name AS circleName,
+	f.stream_enable AS stream,
+	f.playback_enable AS playback,
+	f.notification_enable AS notification
+FROM
+	t_app_circle a,
+	t_platform_ipcamera b,
+	t_app_share_device f
+WHERE
+	a.circle_id = f.circle_id
+AND b.camera_id = f.device_id
+AND b.camera_serialno = #{0}
+	</select>
+	<update id="updateShareOwnDevices" parameterType="java.util.List">
+	
+	<foreach collection="list" item="item" index="index" separator="," > 
+	UPDATE t_app_share_device 
+	<set>
+	stream_enable= #{item.streamEnable},
+	</set>
+	<set>
+	playback_enable=#{item.playbackEnable},
+	</set>
+	<set>
+	notification_enable=#{item.notificationEnable}
+	</set>
+	where circle_id=#{item.circleId}  and device_id=#{item.deviceId}
+	</foreach>
+	</update>
+	<update id="updateShareOwnDevice" parameterType="com.skl.cloud.model.AppDeviceShare">
+	UPDATE  t_app_share_device  set
+	stream_enable= #{streamEnable},
+	playback_enable=#{playbackEnable},
+	notification_enable=#{notificationEnable}
+	where circle_id=#{circleId}  and device_id=#{deviceId}
+	</update>
+	
+	<select id="queryAllCircleIdByUserId" parameterType="string" resultType="long">
+	SELECT
+		DISTINCT circle_id
+	FROM
+		t_app_circle_member
+	WHERE
+		member_id = #{0}
+	AND is_new = 'true' 
+	</select>
+	
+	<select id="queryOwnSharedDevicesInfo" parameterType="string" resultType="com.skl.cloud.model.OwnSharedDevices">
+			SELECT 
+		DISTINCT
+		c.circle_id AS circleId,
+		c.circle_name AS circleName,
+		d.stream_enable AS stream,
+		d.playback_enable AS playback,
+		d.notification_enable AS notification
+		
+		FROM 
+		(SELECT * from t_app_circle
+		WHERE circle_id in(
+		SELECT
+			DISTINCT circle_id
+		FROM
+			t_app_circle_member
+		WHERE
+			member_id = #{0} 
+			AND is_new = 'true' )) c,
+		t_app_share_device d
+		WHERE
+			c.circle_id = d.circle_id
+		AND
+		  d.member_id = #{0} 
+		AND
+			d.device_id = #{1} 
+	</select>
+	
+	<select id="queryCircleId" parameterType="java.util.HashMap" resultType="int">
+	SELECT
+	count(circle_id) as c from t_app_circle_member
+	WHERE
+	circle_id = #{circleId}
+	</select>
+	
+	<select id="queryShareDevice" parameterType="string" resultType="com.skl.cloud.model.AppDeviceShare">
+	SELECT
+		circle_id circleId,
+		member_id memberId,
+		device_id deviceId,
+		stream_enable streamEnable,
+		playback_enable playbackEnable,
+		notification_enable notificationEnable
+	FROM
+		t_app_share_device
+	WHERE
+		circle_id = #{0}
+	AND member_id = #{1}
+	AND device_id = #{2}
+	</select>
+	
+</mapper>

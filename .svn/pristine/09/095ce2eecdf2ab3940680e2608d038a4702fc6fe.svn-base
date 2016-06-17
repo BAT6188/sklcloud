@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.skl.cloud.dao.sub.SubsysStreamStatusMapper" >
+	<resultMap id="resultMap" type="com.skl.cloud.model.sub.SubsysStreamStatus" >
+	    <id column="id" property="id" jdbcType="BIGINT" />
+	    <result column="server_id" property="serverId" jdbcType="TINYINT" />
+	    <result column="server_port" property="serverPort" jdbcType="INTEGER" />
+	    <result column="server_uuid" property="serverUuid" jdbcType="VARCHAR" />
+	    <result column="camera_channel_id" property="cameraChannelId" jdbcType="VARCHAR" />
+	    <result column="camera_sn" property="cameraSn" jdbcType="VARCHAR" />
+	    <result column="begin_time" property="beginTime" jdbcType="TIMESTAMP" />   	    
+	    <result column="stream_step" property="streamStep" jdbcType="TINYINT" />
+	    <result column="stream_status" property="streamStatus" jdbcType="TINYINT" />
+    </resultMap>
+    
+    <select id="select" parameterType="com.skl.cloud.model.sub.SubsysStreamStatus" resultMap="resultMap" flushCache="true">
+	<![CDATA[
+		SELECT
+			*
+		FROM
+			t_platform_subsys_stream
+	 ]]>
+		<where>
+		<if test="serverId !=null ">
+                   AND server_id = #{serverId}
+                </if>
+                <if test="streamStep !=null ">
+                   AND stream_step = #{streamStep}
+                </if>
+                <if test="streamStatus !=null ">
+                   AND stream_status = #{streamStatus}
+                </if>
+                <if test="cameraSn !=null ">
+	            AND camera_sn = #{cameraSn}
+		</if>
+		<if test="cameraChannelId !=null ">
+		    AND camera_channel_id = #{cameraChannelId}
+		</if>
+        </where>
+	</select>
+	
+	<insert id="insert" parameterType="com.skl.cloud.model.sub.SubsysStreamStatus" useGeneratedKeys="true">
+	    <selectKey keyProperty="id" resultType="Long" order="BEFORE">
+			 select get_uuid_short() as id
+		</selectKey>
+    <![CDATA[ 
+		INSERT INTO t_platform_subsys_stream (
+			id,
+			server_id,
+			server_port,
+			server_uuid,
+			camera_channel_id,
+			camera_sn,
+			begin_time,
+			stream_step,
+			stream_status
+		)
+		VALUES
+			(
+				#{id},
+				#{serverId},
+				#{serverPort},
+				#{serverUuid},
+				#{cameraChannelId},
+				#{cameraSn},
+				#{beginTime},
+				#{streamStep},
+				#{streamStatus}
+			)
+    ]]>
+    </insert>
+    
+    <update id="update" parameterType="com.skl.cloud.model.sub.SubsysStreamStatus">
+    <![CDATA[
+		UPDATE t_platform_subsys_stream
+		SET 
+		 server_id = #{serverId},
+		 server_port = #{serverPort},
+		 server_uuid = #{serverUuid},
+		 camera_channel_id = #{cameraChannelId},
+		 camera_sn = #{cameraSn},
+		 begin_time = #{beginTime},
+		 stream_step = #{streamStep},
+		 stream_status = #{streamStatus}
+		WHERE
+			id = #{id}
+    ]]>
+    </update>
+    
+    <delete id="delete" parameterType="com.skl.cloud.model.sub.SubsysStreamStatus">
+    <![CDATA[
+		DELETE
+		FROM
+			t_platform_subsys_stream
+		WHERE
+			camera_channel_id = #{cameraChannelId}
+		AND camera_sn = #{cameraSn}
+		AND server_uuid = #{serverUuid}
+    ]]>
+    </delete> 
+	  
+	  
+</mapper>

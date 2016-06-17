@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.skl.cloud.dao.AppDeviceFeedsFilterMapper">
+	
+	<select id="getShareDeviceByUserSn" parameterType="string" resultType="hashMap">
+		select
+			a.circle_id as circleId,
+			a.member_id as memberId,
+			a.device_id as deviceId
+		from
+			t_app_share_device a
+		where
+			a.member_id = #{0} and
+			a.device_id = (select camera_id from t_platform_ipcamera where camera_serialno=#{1}) 
+		group by deviceId
+	</select>
+	
+	<!-- 设置分享设备Feeds filter使能 -->
+	<update id="updateDeviceFeedsFilter" parameterType="string">
+		update
+			t_app_share_device
+		set
+			change_time = now(),
+			feeds_filter_enable = #{2}
+		where
+			member_id = #{0} and device_id = #{1}
+	</update>
+	
+	<!-- 查询分享设备Feeds filter使能 -->
+	<select id="queryDeviceFeedsFilter" resultType="hashMap">
+		select
+			a.feeds_filter_enable as enable,
+			a.device_id as deviceId,
+			b.camera_model as deviceModel,
+			b.camera_nickname as deviceName,
+			b.camera_serialno as SN,
+			b.camera_kind as deviceKind,
+			c.user_id as userId,
+			c.user_name as nickName
+		from 
+			(select a.device_id,a.feeds_filter_enable,b.user_id from t_app_share_device a,
+			 t_app_user_camera b where a.member_id = #{0} 
+			 and a.device_id = b.camera_id group by a.device_id) a
+			left join t_platform_ipcamera b
+				on a.device_id = b.camera_id
+			left join t_app_user c
+ 				on a.user_id = c.user_id
+	</select>
+</mapper>

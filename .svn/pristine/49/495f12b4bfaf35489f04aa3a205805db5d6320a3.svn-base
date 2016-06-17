@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.skl.cloud.dao.audio.AlarmMapper" >
+  <resultMap id="alarmResultMap" type="com.skl.cloud.model.audio.Alarm" >
+    <id column="id" property="id" jdbcType="BIGINT" />
+    <result column="media_id" property="mediaId" jdbcType="BIGINT" />
+    <result column="display_name" property="displayName" jdbcType="VARCHAR" />
+    <result column="camera_id" property="cameraId" jdbcType="BIGINT" />
+    <result column="camera_sn" property="cameraSn" jdbcType="VARCHAR" />
+    <result column="reserve_time" property="reserveTime" jdbcType="TIMESTAMP" />
+    <result column="play_mode" property="playMode" jdbcType="VARCHAR" />
+    <result column="active_flag" property="activeFlag" jdbcType="TINYINT" />
+	<result column="task_id" property="taskId" jdbcType="VARCHAR" />
+    <result column="status" property="status" jdbcType="TINYINT" />
+    <result column="create_date" property="createDate" jdbcType="TIMESTAMP" />
+    <result column="l_upd_date" property="updateDate" jdbcType="TIMESTAMP" />
+    <association property="media" javaType="com.skl.cloud.model.audio.Media">
+			<id column="media_id" property="id" jdbcType="BIGINT" />
+			<result column="camera_id" property="cameraId" jdbcType="BIGINT" />
+			<result column="file_name" property="fileName" jdbcType="VARCHAR" />
+			<result column="file_url" property="fileUrl" jdbcType="VARCHAR" />
+			<result column="file_size" property="fileSize" jdbcType="BIGINT" />			
+			<result column="play_time" property="playTime" jdbcType="BIGINT" />
+			<result column="media_type" property="mediaType" jdbcType="TINYINT" />
+			<result column="source_type" property="sourceType" jdbcType="TINYINT" />
+	</association>
+  </resultMap>
+  
+  <select id="getAlarmListBySN"  resultMap="alarmResultMap">
+    SELECT
+	al.*, 
+	me.id,
+	me.file_name,
+	me.file_url,
+	me.file_size,
+	me.play_time,
+	me.media_type,
+	me.source_type
+    FROM
+	t_platform_ipcamera_alarm al,
+	t_platform_media me
+    WHERE
+	al.media_id = me.id
+	AND al.status = #{status}
+    AND al.camera_sn = #{sn}
+  </select>
+  
+  <select id="getAlarmByIdSn"  resultMap="alarmResultMap">
+  SELECT
+	al.*, 
+	me.id,
+	me.file_name,
+	me.file_url,
+	me.file_size,
+	me.play_time,
+	me.media_type,
+	me.source_type
+  FROM
+	t_platform_ipcamera_alarm al,
+	t_platform_media me
+  WHERE
+	al.media_id = me.id
+	AND al.status = #{status} 
+    AND al.id = #{alarmId}
+    AND al.camera_sn = #{sn}
+  </select>
+  
+  <update id="setAlarmStatus" >
+		UPDATE t_platform_ipcamera_alarm SET status = #{status} WHERE id = #{alarmId}
+  </update>
+  
+  <insert id="addAlarm" parameterType="com.skl.cloud.model.audio.Alarm" useGeneratedKeys="true">
+	    <selectKey keyProperty="id" resultType="Long" order="BEFORE">
+			 select get_uuid_short() as id
+		</selectKey>
+    <![CDATA[  
+	INSERT INTO t_platform_ipcamera_alarm (
+	        id,
+	        media_id,
+	        display_name,
+	        camera_id,
+	        camera_sn,
+	        reserve_time,
+	        play_mode,
+	        active_flag,
+	        create_date,
+	        task_id,
+	        status
+    )
+    VALUES
+	(
+	    #{id},
+		#{mediaId},
+		#{displayName},
+		(
+			SELECT
+				t_platform_ipcamera.camera_id
+			FROM
+				t_platform_ipcamera
+			WHERE
+				t_platform_ipcamera.camera_serialno = #{cameraSn}
+		),
+		#{cameraSn},
+		#{reserveTime},
+		#{playMode},
+		#{activeFlag},
+		#{createDate},
+		#{taskId},
+		#{status}
+	)
+	]]>
+	</insert>
+	
+	<update id="modifyAlarm" parameterType="com.skl.cloud.model.audio.Alarm">
+	<![CDATA[ 
+	UPDATE t_platform_ipcamera_alarm
+    SET media_id = #{mediaId},
+        display_name = #{displayName},
+        reserve_time = #{reserveTime},
+        play_mode = #{playMode},
+        active_flag = #{activeFlag},
+        status = #{status},
+        l_upd_date = #{updateDate}
+    WHERE
+	    id = #{id}
+	    AND camera_sn = #{cameraSn}
+	 ]]> 
+	</update>
+	
+	<update id="setTaskId" parameterType="com.skl.cloud.model.audio.Alarm">
+	<![CDATA[ 
+	UPDATE t_platform_ipcamera_alarm
+    SET task_id = #{taskId}
+    WHERE
+	    id = #{id} 
+	 ]]> 
+	</update>
+	
+  <select id="isExistTaskId" parameterType="string" resultType="Boolean">
+    <![CDATA[
+        SELECT
+            count(id) AS count
+        FROM
+            t_platform_ipcamera_alarm
+        WHERE
+            task_id = #{0}
+    ]]>
+  </select>
+  
+  <select id="getAlarmById"  resultMap="alarmResultMap">
+  SELECT
+	al.*, 
+	me.id,
+	me.file_name,
+	me.file_url,
+	me.file_size,
+	me.play_time,
+	me.media_type,
+	me.source_type
+  FROM
+	t_platform_ipcamera_alarm al,
+	t_platform_media me
+  WHERE
+	al.media_id = me.id
+    AND al.id = #{alarmId}
+  </select>
+</mapper>

@@ -1,0 +1,220 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.skl.cloud.dao.ipc.IPCMapper" >
+  <update id="updateIpc" parameterType="com.skl.cloud.model.ipc.IPCamera">
+		UPDATE t_platform_ipcamera
+		<set>
+			camera_serialno = #{sn},
+			camera_mac = #{mac},
+			camera_kind = #{kind},
+			camera_model = #{model},
+			camera_nickname = #{nickname},
+			camera_makedate = #{makeDate},
+			deveice_id = #{deviceId},
+			camera_time_zone = #{timeZone},
+			camera_islive = #{isLive},
+			camera_isonline = #{isOnline},
+			camera_status = #{status},
+			camera_offline_time = #{offlineTime},
+			motion_alert_status = #{motionAlertStatus},
+			sound_alert_status = #{soundAlertStatus},
+			speaker_volume = #{speakerVolume},
+			snapshot_uuid = #{snapshotUuid},
+			live_share_status = #{liveShareStatus},
+			<if test="password!=null">
+				password = #{password}
+			</if>
+		</set>
+		WHERE
+			1=1
+            <if test="id !=null ">
+                AND camera_id = #{id}
+            </if>
+            <if test="sn !=null ">
+                AND camera_serialno = #{sn}
+            </if>
+    </update>
+    
+    <update id="updateIpcSub" parameterType="com.skl.cloud.model.ipc.IPCameraSub">
+		UPDATE t_platform_ipcamera_sub
+		SET
+			camera_serialno = #{sn},
+			camera_pincode = #{pincode},
+			camera_validate = #{validate},
+			camera_expired = #{expiredDate},
+			camera_version = #{version},
+			camera_verdate = #{versionDate},
+			fw_download_status = #{fwDownloadStatus},
+			fw_download_error_reason = #{fwDownloadErrorReason},
+			camera_random = #{random},
+			camera_rece_ipc_random = #{receIpcRandom},
+			camera_send_ipc_random = #{sendIpcRandom},
+			camera_p2p_random = #{p2pRandom},
+			video_share_expire = #{videoShareExpire}
+		WHERE
+			1=1
+           <if test="id !=null ">
+                AND camera_id = #{id}
+            </if>
+            <if test="sn !=null ">
+                AND camera_serialno = #{sn}
+            </if>
+    </update>
+    
+    <!-- insert IPCamera -->
+    <insert id="insertIpc" parameterType="com.skl.cloud.model.ipc.IPCamera" useGeneratedKeys="true">
+        <selectKey keyProperty="id" resultType="Long" order="BEFORE">
+			 select get_uuid_short() as id
+		</selectKey>
+    	<![CDATA[ 
+        INSERT INTO t_platform_ipcamera
+        	(camera_id,
+			camera_serialno,
+			camera_mac,
+			camera_kind,
+			camera_model,
+			camera_nickname,
+			camera_makedate,
+			deveice_id,
+			camera_time_zone,
+			camera_islive,
+			camera_isonline,
+			camera_status,
+			camera_offline_time,
+			motion_alert_status,
+			sound_alert_status,
+			speaker_volume,
+			snapshot_uuid,
+			live_share_status,
+			password)
+		values
+			(#{id},
+			#{sn},
+			#{mac},
+			#{kind},
+			#{model},
+			#{nickname},
+			#{makeDate},
+			#{deviceId},
+			#{timeZone},
+			#{isLive},
+			#{isOnline},
+			#{status},
+			#{offlineTime},
+			#{motionAlertStatus},
+			#{soundAlertStatus},
+			#{speakerVolume},
+			#{snapshotUuid},
+			#{liveShareStatus},
+			#{password}) 
+    	]]>
+    </insert>
+    
+    <!-- insert IPCameraSub -->
+    <insert id="insertIpcSub" parameterType="com.skl.cloud.model.ipc.IPCameraSub">
+    	<![CDATA[ 
+        INSERT INTO t_platform_ipcamera_sub
+        	(camera_id,
+			camera_serialno,
+			camera_pincode,
+			camera_validate,
+			camera_expired,
+			camera_version,
+			camera_verdate,
+			fw_download_status,
+			fw_download_error_reason,
+			camera_random,
+			camera_rece_ipc_random,
+			camera_send_ipc_random,
+			camera_p2p_random,
+			video_share_expire)
+		values
+			(#{id},
+			#{sn},
+			#{pincode},
+			#{validate},
+			#{expiredDate},
+			#{version},
+			#{versionDate},
+			#{fwDownloadStatus},
+			#{fwDownloadErrorReason},
+			#{random},
+			#{receIpcRandom},
+			#{sendIpcRandom},
+			#{p2pRandom},
+			#{videoShareExpire}) 
+    	]]>
+    </insert>
+    
+    <delete id="deleteIpc" parameterType="long">
+        DELETE FROM t_platform_ipcamera WHERE camera_id = #{0}
+    </delete>
+    
+    <delete id="deleteIpcSub" parameterType="long">
+        DELETE FROM t_platform_ipcamera_sub WHERE camera_id = #{0}
+    </delete>
+
+	<select id="queryIPCamera" parameterType="com.skl.cloud.model.ipc.IPCamera" resultType="com.skl.cloud.model.ipc.IPCamera">
+		SELECT
+			camera_id as id,
+			camera_serialno as sn,
+			camera_mac as mac,
+			camera_kind as kind,
+			camera_model as model,
+			camera_nickname as nickname,
+			camera_makedate as makeDate,
+			deveice_id as deviceId,
+			camera_time_zone as timeZone,
+			camera_islive as isLive,
+			camera_isonline as isOnline,
+			camera_status as status,
+			camera_offline_time as offlineTime,
+			motion_alert_status as motionAlertStatus,
+			sound_alert_status as soundAlertStatus,
+			speaker_volume as speakerVolume,
+			snapshot_uuid as snapshotUuid,
+			live_share_status as liveShareStatus,
+			password as password
+		FROM
+			t_platform_ipcamera
+		WHERE
+			1=1
+            <if test="id !=null ">
+                AND camera_id = #{id}
+            </if>
+            <if test="sn !=null ">
+                AND camera_serialno = #{sn}
+            </if>
+            <if test="deviceId !=null ">
+                AND deveice_id = #{deviceId}
+            </if>
+	</select>
+	
+	<select id="queryIPCameraSub" parameterType="com.skl.cloud.model.ipc.IPCameraSub" resultType="com.skl.cloud.model.ipc.IPCameraSub">
+		SELECT
+			camera_id as id,
+			camera_serialno as sn,
+			camera_pincode as pincode,
+			camera_validate as validate,
+			camera_expired as expired,
+			camera_version as version,
+			camera_verdate as versionDate,
+			fw_download_status as fwDownloadStatus,
+			fw_download_error_reason as fwDownloadErrorReason,
+			camera_random as random,
+			camera_rece_ipc_random as receIpcRandom,
+			camera_send_ipc_random as sendIpcRandom,
+			camera_p2p_random as p2pRandom,
+			video_share_expire as videoShareExpire
+		FROM
+			t_platform_ipcamera_sub
+		WHERE
+        	1=1
+            <if test="id !=null ">
+                AND camera_id = #{id}
+            </if>
+            <if test="sn !=null ">
+                AND camera_serialno = #{sn}
+            </if>
+	</select>
+</mapper>

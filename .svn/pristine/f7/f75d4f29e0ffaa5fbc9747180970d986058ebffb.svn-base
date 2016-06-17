@@ -1,0 +1,260 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.skl.cloud.dao.feed.AppFeedMapper">
+
+	<!-- 当event为user、time有值时查出相关的事件记录 -->
+	<select id="queryEventsByUserId" parameterType="java.util.Map"
+		statementType="CALLABLE" resultType="com.skl.cloud.model.feed.EventsInfo">
+	<![CDATA[
+	CALL queryEventsByUserId(#{userId},#{start_time},#{end_time},#{model},#{deviceClass})
+	]]>
+	</select>
+
+
+	<select id="queryUserInfoByUserIdAndTimeLimited" parameterType="java.util.Map"
+		statementType="CALLABLE" resultType="com.skl.cloud.model.feed.UsersInfo">
+	<![CDATA[
+	CALL queryUserInfoByUserIdAndTimeLimited(#{userId},#{start_time},#{end_time},#{model},#{deviceClass})
+	]]>
+	</select>
+
+	<select id="queryDeviceInfoByUserIdAndTimeLimited"
+		parameterType="java.util.Map" statementType="CALLABLE"
+		resultType="com.skl.cloud.model.feed.DevicesInfo">
+	<![CDATA[
+	CALL queryDeviceInfoByUserIdAndTimeLimited(#{userId},#{start_time},#{end_time},#{model},#{deviceClass})
+	]]>
+	</select>
+
+	<!-- 当event为user时查出相关的用户信息记录 -->
+	<select id="queryUserInfoByUserId" parameterType="java.util.Map"
+		statementType="CALLABLE" resultType="com.skl.cloud.model.feed.UsersInfo">
+	<![CDATA[
+	CALL queryUserInfoByUserId(#{userId},#{model},#{deviceClass})
+	]]>
+	</select>
+
+	<!-- 当event为user时查出相关的设备信息记录 -->
+	<select id="queryDeviceInfoByUserId" parameterType="java.util.Map"
+		statementType="CALLABLE" resultType="com.skl.cloud.model.feed.DevicesInfo">
+	<![CDATA[
+	CALL queryDeviceInfoByUserId(#{userId},#{model},#{deviceClass})
+	]]>
+	</select>
+
+	<!-- 当event为user、time为null时查出相关最近的50条事件记录 -->
+	<select id="queryLatest50EventsByUserId" parameterType="java.util.Map"
+		statementType="CALLABLE" resultType="com.skl.cloud.model.feed.EventsInfo">
+	<![CDATA[
+	CALL queryLatest50EventsByUserId(#{userId},#{model},#{deviceClass})
+	]]>
+	</select>
+
+
+	<!-- 当event为device、time有值时查出相关的事件记录 -->
+	<select id="queryEventsBySn" parameterType="java.util.Map"
+		statementType="CALLABLE" resultType="com.skl.cloud.model.feed.EventsInfo">
+	<![CDATA[
+	CALL queryEventsBySn(#{sn},#{start_time},#{end_time},#{model},#{deviceClass})
+	]]>
+	</select>
+
+	<!-- 当event为device时查出相关的用户信息记录 -->
+	<select id="queryUserInfoBySn" parameterType="java.util.Map"
+		statementType="CALLABLE" resultType="com.skl.cloud.model.feed.UsersInfo">
+	<![CDATA[
+	CALL queryUserInfoBySn(#{sn},#{model},#{deviceClass})
+	]]>
+	</select>
+
+	<!-- 当event为device时查出相关的用户信息记录 -->
+	<select id="queryUserInfoBySnAndTimeLimited" parameterType="java.util.Map"
+		statementType="CALLABLE" resultType="com.skl.cloud.model.feed.UsersInfo">
+	<![CDATA[
+	CALL queryUserInfoBySnAndTimeLimited(#{sn},#{start_time},#{end_time},#{model},#{deviceClass})
+	]]>
+	</select>
+
+	<!-- 当event为device时查出相关的设备信息记录 -->
+	<select id="queryDeviceInfoBySn" parameterType="java.util.Map"
+		statementType="CALLABLE" resultType="com.skl.cloud.model.feed.DevicesInfo">
+	<![CDATA[
+	CALL queryDeviceInfoBySn(#{sn},#{model},#{deviceClass})
+	]]>
+	</select>
+
+	<!-- 当event为device时查出相关的设备信息记录 -->
+	<select id="queryDeviceInfoBySnAndTimeLimited" parameterType="java.util.Map"
+		statementType="CALLABLE" resultType="com.skl.cloud.model.feed.DevicesInfo">
+	<![CDATA[
+	CALL queryDeviceInfoBySnAndTimeLimited(#{sn},#{start_time},#{end_time},#{model},#{deviceClass})
+	]]>
+	</select>
+
+	<!-- 当event为device、time为null时查出相关最近的50条事件记录 -->
+	<select id="queryLatest50EventsBySn" parameterType="java.util.Map"
+		statementType="CALLABLE" resultType="com.skl.cloud.model.feed.EventsInfo">
+	<![CDATA[
+	CALL queryLatest50EventsBySn(#{sn},#{model},#{deviceClass})
+	]]>
+	</select>
+
+	<!-- 当event为circle、time有值时查出相关的事件记录 -->
+	<select id="queryEventsByCircleId" parameterType="java.util.Map"
+		statementType="CALLABLE" resultType="com.skl.cloud.model.feed.EventsInfo">
+	<![CDATA[
+	CALL queryEventsByCircleId(#{circleId},#{start_time},#{end_time},#{model},#{deviceClass})
+	]]>
+	</select>
+
+	<!-- 当event为circle时查出相关的用户信息记录 -->
+	<select id="queryUserInfoByCircleId" parameterType="java.util.Map"
+		statementType="CALLABLE" resultType="com.skl.cloud.model.feed.UsersInfo">
+	<![CDATA[
+	CALL queryUserInfoByCircleId(#{circleId},#{model},#{deviceClass})
+	]]>
+	</select>
+
+	<!-- 当event为circle、circleId不为空且时间不为空时查出相关的用户信息记录 -->
+	<select id="queryUserInfoByCircleIdAndTimeLimited"
+		parameterType="java.util.Map" statementType="CALLABLE"
+		resultType="com.skl.cloud.model.feed.UsersInfo">
+	<![CDATA[
+	CALL queryUserInfoByCircleIdAndTimeLimited(#{circleId},#{start_time},#{end_time},#{model},#{deviceClass})
+	]]>
+	</select>
+
+
+	<!-- 当event为circle时查出相关的设备信息记录 -->
+	<select id="queryDeviceInfoByCircleId" parameterType="java.util.Map"
+		statementType="CALLABLE" resultType="com.skl.cloud.model.feed.DevicesInfo">
+	<![CDATA[
+	CALL queryDeviceInfoByCircleId(#{circleId},#{model},#{deviceClass})
+	]]>
+	</select>
+
+	<!-- 当event为circle、circleId不为null，且时间不为null时查出相关的设备信息记录 -->
+	<select id="queryDeviceInfoByCircleIdAndTimeLimited"
+		parameterType="java.util.Map" statementType="CALLABLE"
+		resultType="com.skl.cloud.model.feed.DevicesInfo">
+	<![CDATA[
+	CALL queryDeviceInfoByCircleIdAndTimeLimited(#{circleId},#{start_time},#{end_time},#{model},#{deviceClass})
+	]]>
+	</select>
+
+	<!-- 当event为circle、time为null时查出相关的事件记录 -->
+	<select id="queryLatest50EventsByCircleId" parameterType="java.util.Map"
+		statementType="CALLABLE" resultType="com.skl.cloud.model.feed.EventsInfo">
+	<![CDATA[
+	CALL queryLatest50EventsByCircleId(#{circleId},#{model},#{deviceClass})
+	]]>
+	</select>
+
+	<!-- 当event为circle是null、time有值时查出相关的事件记录 -->
+	<select id="queryRelativeCircleEventsByUserId" parameterType="java.util.Map"
+		statementType="CALLABLE" resultType="com.skl.cloud.model.feed.EventsInfo">
+	<![CDATA[
+	CALL queryRelativeCircleEventsByUserId(#{userId},#{start_time},#{end_time},#{model},#{deviceClass})
+	]]>
+	</select>
+
+	<!-- 当event为circle是null时查出相关的用户信息记录 -->
+	<select id="queryRelativeCircleUserInfoByUserId" parameterType="java.util.Map"
+		statementType="CALLABLE" resultType="com.skl.cloud.model.feed.UsersInfo">
+	<![CDATA[
+	CALL queryRelativeCircleUserInfoByUserId(#{userId},#{model},#{deviceClass})
+	]]>
+	</select>
+
+	<!-- 当event为circle是null、time有值时查出所有相关的用户信息记录 -->
+	<select id="queryRelativeCircleUserInfoByUserIdAndTimeLimited"
+		parameterType="java.util.Map" statementType="CALLABLE"
+		resultType="com.skl.cloud.model.feed.UsersInfo">
+	<![CDATA[
+	CALL queryRelativeCircleUserInfoByUserIdAndTimeLimited(#{userId},#{start_time},#{end_time},#{model},#{deviceClass})
+	]]>
+	</select>
+
+	<!-- 当event为circle时查出相关的设备信息记录 -->
+	<select id="queryRelativeCircleDeviceInfoByUserId"
+		parameterType="java.util.Map" statementType="CALLABLE"
+		resultType="com.skl.cloud.model.feed.DevicesInfo">
+	<![CDATA[
+	CALL queryRelativeCircleDeviceInfoByUserId(#{userId},#{model},#{deviceClass})
+	]]>
+	</select>
+
+
+	<!-- 当event为circle是null、time有值时查出所有相关的设备信息记录 -->
+	<select id="queryRelativeCircleDeviceInfoByUserIdAndTimeLimited"
+		parameterType="java.util.Map" statementType="CALLABLE"
+		resultType="com.skl.cloud.model.feed.DevicesInfo">
+	<![CDATA[
+	CALL queryRelativeCircleDeviceInfoByUserIdAndTimeLimited(#{userId},#{start_time},#{end_time},#{model},#{deviceClass})
+	]]>
+	</select>
+
+
+	<!-- 当event为circle是null、time为null时查出相关的事件记录 -->
+	<select id="queryLatest50RelativeCircleEventsByUserId"
+		parameterType="java.util.Map" statementType="CALLABLE"
+		resultType="com.skl.cloud.model.feed.EventsInfo">
+	<![CDATA[
+	CALL queryLatest50RelativeCircleEventsByUserId(#{userId},#{model},#{deviceClass})
+	]]>
+	</select>
+
+	<!-- 根据指定sn和查询动态参数类型查询温度或者湿度 -->
+	<select id="querySensorDynamicParamsBySn" parameterType="java.util.Map"
+		statementType="CALLABLE" resultType="com.skl.cloud.model.feed.DeviceDynamic">
+	<![CDATA[
+	CALL querySensorDynamicParamsBySn(#{sn},#{dynamic})
+	]]>
+	</select>
+
+	<!-- 根据指定sn、开始和结束时间查询温度、湿度和上报发生时间 -->
+	<select id="querySensorDynamicInfoBySnAndTime" parameterType="java.util.Map"
+		statementType="CALLABLE" resultType="com.skl.cloud.model.feed.DeviceDynamic">
+	<![CDATA[
+	CALL querySensorDynamicInfoBySnAndTime(#{sn},#{startTime},#{endTime},#{deviceClass})
+	]]>
+	</select>
+
+
+	<!-- 根据指定userId查询所在的家庭组id -->
+	<select id="queryAllCircleIdsByUserId" parameterType="int"
+		resultType="int">
+	<![CDATA[
+	    SELECT DISTINCT circle_id  circleId from t_app_circle_member where member_id = #{0}
+	]]>
+	</select>
+
+	<!-- 根据指定circleId查询所有的userId -->
+	<select id="queryAllUserIdsByCircleId" parameterType="int"
+		resultType="int">
+	<![CDATA[
+	    SELECT member_id memberId FROM t_app_circle_member where circle_id = #{0}
+	]]>
+	</select>
+
+	<!-- 根据指定userId查询对应的分享出来的sn -->
+	<select id="queryAllSnByUserId" parameterType="int" resultType="String">
+	<![CDATA[
+	    SELECT 
+	    DISTINCT
+			ca.camera_serialno
+		from 
+			t_app_share_device d,
+			t_app_user_camera ca
+ 		where circle_id IN(
+				SELECT circle_id from t_app_circle_member where member_id = #{0})
+			AND
+				d.member_id = #{0}
+			AND
+				d.device_status = 0
+			AND
+				ca.camera_id = d.device_id
+            AND circle_id = #{1}
+	]]>
+	</select>
+</mapper>

@@ -1,0 +1,10 @@
+INSERT INTO batch_job VALUES (8000000001, 'ipcReportE01', 'ipcReportE01', 1, 300, null, null, now(), now());
+INSERT INTO batch_job VALUES (8000000002, 'ipcReportE02', 'ipcReportE02', 1, 300, null, null, now(), now());
+INSERT INTO batch_job VALUES (8000000003, 'ipcReportE03', 'ipcReportE03', 1, 300, null, null, now(), now());
+INSERT INTO batch_job VALUES (8000000004, 'ipcReportE04', 'ipcReportE04', 1, 300, null, null, now(), now());
+INSERT INTO batch_job VALUES (8000000005, 'ipcReportE05', 'ipcReportE05', 1, 300, null, null, now(), now());
+INSERT INTO batch_job VALUES (8000000006, 'ipcReportE06', 'ipcReportE06', 1, 300, null, null, now(), now());
+INSERT INTO batch_job VALUES (8000000007, 'ipcReportE07', 'ipcReportE07', 1, 300, null, null, now(), now());
+INSERT INTO batch_job VALUES (90000000061, 'mesDataJob', 'mesDataJob', 1, 3600, null, null, now(), now());
+INSERT INTO batch_job VALUES (90000000062, 'insertMesToIpcamera', 'insertMesToIpcamera', 1, 3600, null, null, now(), now());
+INSERT INTO batch_job VALUES (9000000006, 'cleanJobExecutionJob', 'cleanJobExecutionJob', 1, 3600, null, null, now(), now());

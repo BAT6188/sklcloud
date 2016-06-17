@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:rabbit="http://www.springframework.org/schema/rabbit"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans
+		http://www.springframework.org/schema/beans/spring-beans-3.2.xsd
+		http://www.springframework.org/schema/context
+		http://www.springframework.org/schema/context/spring-context-3.2.xsd
+		http://www.springframework.org/schema/rabbit
+        http://www.springframework.org/schema/rabbit/spring-rabbit-1.0.xsd		
+">
+	<!-- connection factory -->
+	<bean id="rabbitConnectionFactory" class="com.rabbitmq.client.ConnectionFactory">
+		<property name="host" value="${rabbitmq.host}" />
+		<property name="port" value="${rabbitmq.port}" />
+		<property name="username" value="${rabbitmq.username}" />
+		<property name="password" value="${rabbitmq.password}" />
+		<property name="connectionTimeout" value="${rabbitmq.connection.timeout}" />
+	</bean> 
+	
+	<bean id="connectionFactory" class="org.springframework.amqp.rabbit.connection.CachingConnectionFactory">  
+        <constructor-arg ref="rabbitConnectionFactory" />  
+        <property name="channelCacheSize" value="${rabbitmq.channelCacheSize}" />  
+    </bean>
+
+	<rabbit:admin connection-factory="connectionFactory" />
+
+	<!-- queue definition -->
+	<rabbit:queue name="H5.p0.durable" durable="true"/>
+
+	<!-- exchange queue bind -->
+	<rabbit:topic-exchange name="H5" durable="true">
+		<rabbit:bindings>
+			<rabbit:binding queue="H5.p0.durable" pattern="routing-key" />
+		</rabbit:bindings>
+	</rabbit:topic-exchange>
+
+	<bean id="jsonMessageConverter"
+		class="org.springframework.amqp.support.converter.Jackson2JsonMessageConverter"></bean>
+
+	<!-- spring template声明 -->
+	<rabbit:template exchange="H5" id="amqpTemplate"
+		connection-factory="connectionFactory" message-converter="jsonMessageConverter"
+		routing-key="routing-key"/>
+		
+</beans>

@@ -1,0 +1,226 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.skl.cloud.dao.user.ShareMapper">
+	<resultMap id="BaseResultMap" type="com.skl.cloud.model.user.Share">
+		<id column="id" property="id" jdbcType="BIGINT" />
+		<result column="camera_id" property="cameraId" jdbcType="BIGINT" />
+		<result column="user_id" property="userId" jdbcType="BIGINT" />
+		<result column="camera_sn" property="cameraSn" jdbcType="VARCHAR" />
+		<result column="link_url" property="linkUrl" jdbcType="VARCHAR" />
+		<result column="img_url" property="imgUrl" jdbcType="VARCHAR" />
+		<result column="share_type" property="shareType" jdbcType="TINYINT" />
+		<result column="start_date" property="startDate" jdbcType="TIMESTAMP" />
+		<result column="end_date" property="endDate" jdbcType="TIMESTAMP" />
+		<result column="create_date" property="createDate" jdbcType="TIMESTAMP" />
+		<result column="l_upd_date" property="lUpdDate" jdbcType="TIMESTAMP" />
+		<result column="uuid" property="uuid" jdbcType="VARCHAR" />
+	</resultMap>
+
+	<!-- insert IPC share -->
+	<insert id="insert" parameterType="com.skl.cloud.model.user.Share"
+		useGeneratedKeys="true" keyProperty="id">
+    <![CDATA[ 
+        INSERT INTO t_platform_share(
+                uuid,
+                user_id,
+                camera_id,
+                camera_sn,
+                link_url,
+                img_url,
+                share_type,
+                start_date,
+                end_date,
+                create_date,
+                l_upd_date)
+              values(
+                #{uuid},
+                #{userId},
+                #{cameraId},
+                #{cameraSn},
+                #{linkUrl},
+                #{imgUrl},
+                #{shareType},
+                #{startDate},
+                #{endDate},
+                now(),
+                now()
+               ) 
+    ]]>
+	</insert>
+
+	<!-- delete IPC share by primary key (id) -->
+	<delete id="delete" parameterType="long">
+    <![CDATA[
+        DELETE FROM t_platform_share WHERE id = #{0}
+    ]]>
+	</delete>
+
+	<!-- update IPC share data -->
+	<update id="update" parameterType="com.skl.cloud.model.user.Share">
+     <![CDATA[
+        UPDATE t_platform_share SET 
+            link_url =#{linkUrl},
+            img_url =#{imgUrl},
+            start_date =#{startDate},
+            end_date =#{endDate}, 
+            l_upd_date=now() 
+        WHERE id = #{id}
+    ]]>
+	</update>
+
+	<!-- select IPC share by id -->
+	<select id="queryShareById" parameterType="string" resultMap="BaseResultMap">
+    <![CDATA[
+        SELECT
+            id,
+            user_id,
+            camera_id,
+            camera_sn,
+            link_url,
+            img_url,
+            share_type,
+            start_date,
+            end_date,
+            create_date,
+            l_upd_date
+        FROM
+            t_platform_share
+        WHERE
+            id = #{0}    
+    ]]>
+	</select>
+
+	<!-- select IPC share by uuid -->
+	<select id="queryShareByUUID" parameterType="string" resultMap="BaseResultMap">
+    <![CDATA[
+        SELECT
+            id,
+            user_id,
+            camera_id,
+            camera_sn,
+            link_url,
+            img_url,
+            share_type,
+            start_date,
+            end_date,
+            create_date,
+            l_upd_date
+        FROM
+            t_platform_share
+        WHERE
+            uuid = #{0}    
+    ]]>
+	</select>
+
+	<!-- select IPC share list by parameter -->
+	<select id="queryShareList" parameterType="string" resultMap="BaseResultMap">
+    <![CDATA[
+        SELECT
+            id,
+            user_id,
+            camera_id,
+            camera_sn,
+            link_url,
+            img_url,
+            share_type,
+            start_date,
+            end_date,
+            create_date,
+            l_upd_date
+        FROM
+            t_platform_share
+    ]]>
+		<where>
+			<if test="shareType !=null ">
+				share_type = #{shareType}
+			</if>
+			<if test="cameraSn !=null ">
+				AND camera_sn = #{cameraSn}
+			</if>
+			<if test="userId !=null ">
+				AND user_id = #{userId}
+			</if>
+		</where>
+	</select>
+
+	<select id="getServerPublicIP" parameterType="string"
+		resultType="string">
+		SELECT
+		sa.server_public_ip
+		FROM
+		t_platform_ts_server_port_Bind_sn sps,
+		t_platform_ts_server_port sp,
+		t_platform_subsys_address sa
+		WHERE
+		sa.server_uuid = sp.ts_uuid
+		AND sp.id
+		= sps.id
+		AND sps.camera_serialno = #{0}
+	</select>
+
+	<select id="getUuidBySn" parameterType="string" resultType="string">
+		SELECT
+		uuid
+		FROM
+		t_platform_share
+		WHERE
+		camera_sn = #{0}
+		AND start_date IS
+		NULL
+		AND end_date IS NULL
+	</select>
+
+	<select id="getCreatRelayUrlInfo" resultType="string">
+		SELECT
+		sa.server_public_ip
+		FROM
+		t_platform_subsys_stream ss,
+		t_platform_subsys_address sa
+		WHERE
+		ss.server_uuid = sa.server_uuid
+		AND ss.server_id= #{serverId}
+		AND ss.camera_sn = #{sn}
+		AND ss.camera_channel_id = #{channelId}
+	</select>
+
+	<update id="updateUuidUserId">
+     <![CDATA[
+        UPDATE t_platform_share SET 
+            uuid = #{uuid},
+            user_id = #{userId},
+            l_upd_date = now() 
+        WHERE camera_sn = #{sn}
+        AND start_date IS NULL
+		AND end_date IS NULL
+    ]]>
+	</update>
+	
+    <select id="getLiveStreamServiceInfo" parameterType="string"
+		resultType="string">
+	SELECT
+		camera_sn
+	FROM
+		t_platform_subsys_stream
+	WHERE
+		camera_sn = #{0}
+		AND stream_step = 2
+		AND stream_status = 0
+		AND server_id = 7
+    </select>
+
+	
+	<!-- delete IPC share by cameraSN except ipc relay data  -->
+	<delete id="deleteBySnExceptRelay" parameterType="string">
+    <![CDATA[
+    DELETE
+    FROM
+	    t_platform_share
+    WHERE
+	    camera_sn = #{sn}
+    AND (
+	    start_date IS NOT NULL
+	    OR end_date IS NOT NULL
+    )
+    ]]>
+	</delete>
+</mapper>

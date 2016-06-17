@@ -1,0 +1,493 @@
+package com.skl.cloud.service.impl;
+
+import java.io.File;
+import java.net.HttpURLConnection;
+import java.net.SocketTimeoutException;
+import java.net.URL;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.Map;
+
+import javax.mail.MessagingException;
+import javax.mail.internet.MimeMessage;
+
+import net.sf.json.JSONObject;
+
+import org.apache.commons.io.IOUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.mail.javamail.JavaMailSenderImpl;
+import org.springframework.mail.javamail.MimeMessageHelper;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import sun.misc.BASE64Encoder;
+
+import com.amazonaws.HttpMethod;
+import com.skl.cloud.common.exception.BusinessException;
+import com.skl.cloud.dao.AppUserAccountMgtMapper;
+import com.skl.cloud.foundation.file.S3Factory;
+import com.skl.cloud.model.AppCircle;
+import com.skl.cloud.model.AppCircleMember;
+import com.skl.cloud.model.user.AppUser;
+import com.skl.cloud.model.user.UserThirdAccount;
+import com.skl.cloud.service.AppMyCircleMgtService;
+import com.skl.cloud.service.AppUserAccountMgtService;
+import com.skl.cloud.service.S3Service;
+import com.skl.cloud.service.user.AppUserService;
+import com.skl.cloud.util.common.Email;
+import com.skl.cloud.util.common.RandomTools;
+import com.skl.cloud.util.common.StringUtil;
+import com.skl.cloud.util.common.UtilTools;
+import com.skl.cloud.util.common.XmlUtil;
+import com.skl.cloud.util.config.SystemConfig;
+import com.skl.cloud.util.constants.Constants;
+import com.skl.cloud.util.constants.S3ServiceType;
+import com.skl.cloud.util.encrypt.EncrytorUtil;
+
+@Service("AppUserAccountMgtService")
+public class AppUserAccountMgtServiceImpl implements AppUserAccountMgtService
+{
+	protected Logger log = LoggerFactory.getLogger(AppUserAccountMgtServiceImpl.class);
+	
+	@Autowired(required = true)
+	JavaMailSenderImpl mailSender;
+	
+	@Autowired(required = true)
+	private AppUserAccountMgtMapper appUserAccountMgtMapper;
+	
+	@Autowired
+    private AppUserService userService;
+	
+    @Autowired
+    private AppMyCircleMgtService appMyCircleMgtService;
+
+    @Autowired
+    private S3Service s3Service;
+
+	@Override
+	@Transactional
+	public void forgetPw(String email) throws Exception
+	{
+		// 根据email获取用户信息(如果用户在线,则踢下线)
+		AppUser user = userService.getForgetPwUserByEmail(email);
+
+		if (user == null)
+		{
+			throw new BusinessException("0x50020031");
+		}
+
+		// 判断用户最终状态
+		if (user.getStatus() != null && user.getStatus())
+		{
+			throw new BusinessException("0x50020032");
+		}
+
+		// 获取云端随机数
+		String cloudRandom = RandomTools.getRandom();
+
+		// 刷新云端随机数
+		user.setCloudRandom(cloudRandom);
+		userService.updateUserById(user);
+
+		// 向用户发送重置密码邮件
+		if (!this.sendEmailForgetPw(String.valueOf(user.getId()), email, cloudRandom))
+		{
+			throw new BusinessException("0x50020019");
+		}
+	}
+
+	@Override
+	@Transactional
+	public int reSetPw(String userId, String cloudRandom, String password) throws Exception
+	{
+		return appUserAccountMgtMapper.reSetPw(userId, cloudRandom, password, RandomTools.getRandom());
+	}
+
+	@Override
+	@Transactional
+	public void createUserThirdAccount(UserThirdAccount thirdAccount) throws Exception
+	{
+		appUserAccountMgtMapper.insertUserThirdAccount(thirdAccount);
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public UserThirdAccount getUserThirdAccount(String openKind, String openID) throws Exception
+	{
+		return appUserAccountMgtMapper.selectUserThirdAccount(openKind, openID);
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public void checkThirdAccount(String loginKind, String openID, String accessToken) throws Exception
+	{
+		// 1. 获取第三方账户服务器地址
+		String url = SystemConfig.getProperty("third.account.url." + loginKind.toLowerCase());
+		url += accessToken;
+
+		// 2. 验证token的正确性
+		JSONObject json = this.sendHttpGet(url);
+
+		// 3. 是否返回error
+		if (json.containsKey("error"))
+		{
+			throw new BusinessException("0x50020058");
+		}
+
+		// 4. 分类组装用户信息
+		Map<String, String> map = new HashMap<String, String>();
+		if (loginKind.equals("GOOGLE"))
+		{
+			map.put("openID", json.getString("user_id"));
+		}
+		else if (loginKind.equals("FACEBOOK"))
+		{
+			map.put("openID", json.getString("id"));
+		}
+
+		// 5. token中的openid和传入的openid是否一致
+		if (!openID.equals(map.get("openID")))
+		{
+			throw new BusinessException("0x50020059");
+		}
+	}
+	/**
+	 * <给用户发送重置密码邮件>
+	 * 
+	 * @param userId
+	 * @param email
+	 * @param cloudRandom
+	 * @return
+	 */
+	@SuppressWarnings({ "static-access" })
+	private boolean sendEmailForgetPw(String userId, String email, String cloudRandom)
+	{
+		String id = new BASE64Encoder().encode((userId + "").getBytes());
+		id = this.string2Unicode(id);
+		String random = this.string2Unicode(cloudRandom);
+		String ip = UtilTools.getlocalIp();
+		String emailContent = "请勿回复本邮件,点击下面的链接,重设密码<br/><a href=" + "http://" + ip + ":8080/sklcloud/skladmin/verify.html?userId=" + id + "&KEY=" + random + ">" + "http://" + ip
+				+ ":8080/sklcloud/skladmin/verify.html?userId=" + id + "&KEY=" + random + "</a>" + "<br/>";
+		return Email.send("smtp.163.com", "brilliant_ysx@163.com", email, "sky-light重置密码", emailContent, "brilliant_ysx@163.com", "ysx927069");
+	}
+
+	private JSONObject sendHttpGet(String url) throws Exception
+	{
+		JSONObject json;
+		URL httpurl = new URL(url);
+		HttpURLConnection httpConn = (HttpURLConnection) httpurl.openConnection();
+		try
+		{
+			// 设置连接主机超时
+			httpConn.setConnectTimeout(Integer.valueOf(SystemConfig.getProperty("third.account.connect.timeout")));
+
+			// 设置从主机读取数据超时
+			httpConn.setReadTimeout(Integer.valueOf(SystemConfig.getProperty("third.account.read.timeout")));
+
+			if(httpConn.getResponseCode() != HttpURLConnection.HTTP_OK)
+			{
+				throw new BusinessException("0x50020058");
+			}
+			String str = IOUtils.toString(httpConn.getInputStream(), "UTF-8");
+			json = JSONObject.fromObject(str);
+		}
+		catch (BusinessException e)
+		{
+			throw e;
+		}
+		catch (SocketTimeoutException e)
+		{
+			throw new BusinessException("0x50020056", e);
+		}
+		catch (Exception e)
+		{
+			throw new BusinessException("0x50020057", e);
+		}
+		finally
+		{
+			httpConn.disconnect();
+		}
+		return json;
+	}
+	private static String string2Unicode(String string)
+	{
+		StringBuffer unicode = new StringBuffer();
+
+		for (int i = 0; i < string.length(); i++)
+		{
+
+			// 取出每一个字符
+			char c = string.charAt(i);
+
+			// 转换为unicode
+			unicode.append("%" + Integer.toHexString(c));
+		}
+
+		return unicode.toString();
+	}
+
+	@Override
+	@Transactional
+	public Map<String, Object> addUserByEmail(AppUser appUser, String fileName) throws Exception
+	{
+		Map<String, Object> backMap = new LinkedHashMap<String, Object>();
+		
+        // （1）app用户信息入库
+        userService.createUser(appUser);
+
+        // （2）创建家庭组
+        if (Constants.ipcModelType.isFamilerIPC(appUser.getKind())) 
+        {
+            AppCircle appCircle = new AppCircle();
+            appCircle.setCircleName("My family");
+            appCircle.setPortraitId(appUser.getPortraintId());
+            appCircle.setCircleInfo("My first circle");
+            appMyCircleMgtService.addCircle(appCircle);
+
+            AppCircleMember appCircleMember = new AppCircleMember();
+            appCircleMember.setCircleId(appCircle.getCircleId());
+            appCircleMember.setMemberId(String.valueOf(appUser.getId()));
+            appCircleMember.setMemberNickName(appUser.getName());
+            appCircleMember.setMemberCircleRole(String.valueOf(Constants.MyCircleRole.admin));
+            appCircleMember.setIsNew("true");
+            appMyCircleMgtService.createCircleMember(appCircleMember);
+        }
+
+        // （3）上传文件信息写入s3_file表
+        if ("-1".equals(appUser.getPortraintId()))
+        {
+			Map<String, String> paramMap = new HashMap<String, String>();
+			paramMap.put("userId", String.valueOf(appUser.getId()));
+			paramMap.put("fileName", fileName);
+			String urlPath = s3Service.getUrlAndSaveInfo(S3ServiceType.SYSTEM_USER_PORTRAIT.getType(), appUser.getPortraintUuid(), paramMap);
+			
+			// （4）返回xml，只有自定义头像是才返回上传图片相关内容
+            backMap.put("uuid", appUser.getPortraintUuid());
+            backMap.put("url", S3Factory.getDefault().getPresignedUrl(StringUtil.convertToS3Key(urlPath + fileName), HttpMethod.PUT));
+            backMap.put("serviceType", S3ServiceType.SYSTEM_USER_PORTRAIT.getType());
+        }
+        return backMap;
+    }
+
+	@Override
+	@Transactional
+	public AppUser updateUserLoginByEmail(Map<String, Object> paraMap) throws Exception
+	{
+		String email = XmlUtil.convertToString(paraMap.get("email"), false);
+		String clientKind = XmlUtil.convertToString(paraMap.get("clientKind"), false);
+		String passWord = XmlUtil.convertToString(paraMap.get("passWord"), false);
+		String random = XmlUtil.convertToString(paraMap.get("random"), false);
+
+		AppUser appUser = userService.getAppUserByEmail(email);
+		if (appUser == null)
+		{
+			// familer or HPC03B
+			if (Constants.ipcModelType.isFamilerIPC(clientKind) || Constants.ipcModelType.isHPC03BIPC(clientKind))
+			{
+				throw new BusinessException("0x50020031");
+			}
+			// HPC03
+			else if (Constants.ipcModelType.isHPC03IPC(clientKind))
+			{
+				appUser = new AppUser();
+				appUser.setKind(clientKind);
+				appUser.setEmail(email);
+				appUser.setName(email.substring(0, email.indexOf("@")));
+				appUser.setPassword(passWord);
+				appUser.setUserType(0);
+				appUser.setBindFlag(0);
+				appUser.setRandom(random);
+				
+				appUser.setCloudRandom(RandomTools.getRandom());
+				appUser.setStatus(true);
+				appUser.setLoginTime(new Date());
+				appUser.setHeartbeatTime(new Date());
+				appUser = userService.createUserNoDecrypt(appUser);
+				return appUser;
+			}
+			else
+			{
+				// 预留，不做处理
+			}
+		}
+		else
+		{
+			// clientKind一致性匹配
+			if(!appUser.getKind().equals(clientKind))
+			{
+				throw new BusinessException("0x50020082");
+			}
+			
+			// familer or HPC03B
+			if (Constants.ipcModelType.isFamilerIPC(clientKind) || Constants.ipcModelType.isHPC03BIPC(clientKind))
+			{
+				if (!appUser.getPassword().equals(passWord))
+				{
+					throw new BusinessException("0x50020018");
+				}
+			}
+			// HPC03
+			else if (Constants.ipcModelType.isHPC03IPC(clientKind))
+			{
+				// 预留，不做处理
+			}
+			else
+			{
+				// 预留，不做处理
+			}
+		}
+
+		// 登录成功，设置云端随机数和用户随机数
+		appUser.setRandom(random);
+		appUser.setCloudRandom(RandomTools.getRandom());
+		appUser.setStatus(true);
+		appUser.setLoginTime(new Date());
+		appUser.setHeartbeatTime(new Date());
+		userService.updateUserById(appUser);
+		
+		return appUser;
+	}
+
+	@Override
+	@Transactional
+	public AppUser updateUserLoginByThirdAccount(Map<String, Object> paraMap) throws Exception
+	{
+		String email = XmlUtil.convertToString(paraMap.get("email"), false);
+		String clientKind = XmlUtil.convertToString(paraMap.get("clientKind"), false);
+		String loginKind = XmlUtil.convertToString(paraMap.get("loginKind"), false);
+		String openID = XmlUtil.convertToString(paraMap.get("openID"), false);
+		String accessToken = XmlUtil.convertToString(paraMap.get("accessToken"), false);
+		String portraitId = XmlUtil.convertToString(paraMap.get("portraitId"), false);
+		String random = XmlUtil.convertToString(paraMap.get("random"), false);
+
+		// 1. 发送第三方账户服务器，查询openId和token的合法性
+		this.checkThirdAccount(loginKind, openID, accessToken);
+
+		// 2. 查询登录的第三方账户openId是否已经注册过
+		UserThirdAccount loginThirdAccount = this.getUserThirdAccount(loginKind, openID);
+
+		// 3. 根据email获取user信息
+		AppUser appUser = userService.getAppUserByEmail(email);
+		if (appUser == null)
+		{
+			if (loginThirdAccount != null)
+			{
+				throw new BusinessException("0x50020077");
+			}
+
+			// 第三方账户不支持自定义头像
+			if ("-1".equals(portraitId))
+			{
+				throw new BusinessException("0x50020074");
+			}
+
+			// 3.1 注册第三方账户
+			String userName = email.substring(0, email.indexOf("@"));
+
+			appUser = new AppUser();
+			appUser.setKind(clientKind);
+			appUser.setEmail(email);
+			appUser.setName(userName);
+			appUser.setPortraintId(portraitId);
+			appUser.setPassword(EncrytorUtil.getMD5(userName));
+			appUser.setUserType(0);
+			appUser.setBindFlag(0);
+			
+			appUser.setRandom(random);
+			appUser.setCloudRandom(RandomTools.getRandom());
+			appUser.setStatus(true);
+			appUser.setLoginTime(new Date());
+			appUser.setHeartbeatTime(new Date());
+			userService.createUserNoDecrypt(appUser);
+
+			if (Constants.ipcModelType.isFamilerIPC(clientKind))
+			{
+				AppCircle appCircle = new AppCircle();
+				appCircle.setCircleName("My family");
+				appCircle.setPortraitId(portraitId);
+				appCircle.setCircleInfo("My first circle");
+				appMyCircleMgtService.addCircle(appCircle);
+
+				AppCircleMember appCircleMember = new AppCircleMember();
+				appCircleMember.setCircleId(appCircle.getCircleId());
+				appCircleMember.setMemberId(String.valueOf(appUser.getId()));
+				appCircleMember.setMemberNickName(appUser.getName());
+				appCircleMember.setMemberCircleRole(String.valueOf(Constants.MyCircleRole.admin));
+				appCircleMember.setIsNew("true");
+				appMyCircleMgtService.createCircleMember(appCircleMember);
+			}
+
+			UserThirdAccount thirdAccount = new UserThirdAccount();
+			thirdAccount.setUserId(appUser.getId());
+			thirdAccount.setOpenKind(loginKind);
+			thirdAccount.setOpenID(openID);
+			this.createUserThirdAccount(thirdAccount);
+			
+			return appUser;
+		}
+		else
+		{
+			// 3.2 验证email和openID的一致性
+			if (loginThirdAccount == null)
+			{
+				throw new BusinessException("0x50020075");
+			}
+			else
+			{
+				if (!appUser.getId().equals(loginThirdAccount.getUserId()))
+				{
+					throw new BusinessException("0x50020076");
+				}
+			}
+		}
+
+		// 4. 登录成功，设置云端随机数和用户随机数
+		appUser.setRandom(random);
+		appUser.setCloudRandom(RandomTools.getRandom());
+		appUser.setStatus(true);
+		appUser.setLoginTime(new Date());
+		appUser.setHeartbeatTime(new Date());
+		userService.updateUserById(appUser);
+		return appUser;
+	}
+
+	/**
+	 * 发邮件给管理员
+	 */
+	@Override
+	public void sendEmailWithAttachment(Map<String, String> mailInfo) {
+  
+		MimeMessage message = mailSender.createMimeMessage();
+
+		MimeMessageHelper helper = null;
+		try {
+			helper = new MimeMessageHelper(message, true, "UTF-8");
+			helper.setFrom(mailInfo.get("fromWhom"));
+			helper.setTo(mailInfo.get("toWhom"));
+			helper.setText(mailInfo.get("text"));
+			helper.setSubject(mailInfo.get("subject"));
+		} catch (MessagingException e) {
+			log.error(e.getMessage(), e);
+		}
+
+		FileSystemResource file = null;
+		if (mailInfo.get("attachmentPath") != null) {
+			if (new File(mailInfo.get("attachmentPath")).exists()) {
+				log.info("********保存错误信息的附件文件存在********");
+				file = new FileSystemResource(new File(mailInfo.get("attachmentPath")));
+				try {
+					helper.addAttachment(file.getFilename(), file);
+				} catch (MessagingException e) {
+					log.error(e.getMessage(), e);
+				}
+			}
+		}
+		
+		mailSender.send(message);
+		log.info("********send email ok********");
+	}
+}

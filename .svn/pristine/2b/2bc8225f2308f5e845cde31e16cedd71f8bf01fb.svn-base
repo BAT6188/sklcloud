@@ -1,0 +1,4 @@
+#aws_sg_test
+jdbc_url=jdbc:mysql://sklcloud.cvkh7i7kvknf.ap-southeast-1.rds.amazonaws.com:3306/sklCloud?useUnicode=true&characterEncoding=UTF-8&zeroDateTimeBehavior=convertToNull
+jdbc_username=root
+jdbc_password=12345678

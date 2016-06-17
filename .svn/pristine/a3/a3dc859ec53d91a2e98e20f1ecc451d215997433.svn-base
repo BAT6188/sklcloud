@@ -1,0 +1,92 @@
+package com.skl.cloud.foundation.shiro.realm;
+
+import javax.servlet.http.HttpServletRequest;
+
+import org.apache.commons.lang3.StringUtils;
+import org.apache.shiro.authc.AuthenticationException;
+import org.apache.shiro.authc.AuthenticationInfo;
+import org.apache.shiro.authc.AuthenticationToken;
+import org.apache.shiro.authc.SimpleAuthenticationInfo;
+import org.apache.shiro.authz.AuthorizationInfo;
+import org.apache.shiro.authz.SimpleAuthorizationInfo;
+import org.apache.shiro.realm.AuthorizingRealm;
+import org.apache.shiro.subject.PrincipalCollection;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+
+import com.skl.cloud.model.user.AppUser;
+import com.skl.cloud.service.common.CommonService;
+import com.skl.cloud.service.user.AppUserService;
+import com.skl.cloud.util.common.HeartMd5Util;
+
+/**
+ * 进行认证 和授权的凭证
+ * @author weibin
+ *
+ */
+public class StatelessRealm extends AuthorizingRealm {
+	
+	@Autowired(required = true)
+    private CommonService commonService;
+	
+	@Autowired(required = true)
+    private AppUserService userService;
+	
+	private static Logger log = LoggerFactory.getLogger(StatelessRealm.class);
+	
+    @Override
+    public boolean supports(AuthenticationToken token) {
+        //仅支持StatelessToken类型的Token
+        return token instanceof StatelessToken;
+    }
+    @Override
+    protected AuthorizationInfo doGetAuthorizationInfo(PrincipalCollection principals) {
+        //根据用户名查找角色，请根据需求实现
+    	Long userId = (Long) principals.getPrimaryPrincipal();
+    	//查询数据库 ，获取当前用户相关的角色和权限
+        SimpleAuthorizationInfo authorizationInfo =  new SimpleAuthorizationInfo();
+        authorizationInfo.addRoles(userService.findRoleName(userId));
+        authorizationInfo.addStringPermissions(userService.findPermission(userId));
+        //authorizationInfo.addRole("admin");
+        //authorizationInfo.addStringPermission("nihao");
+        return authorizationInfo;
+    }
+    @Override
+    protected AuthenticationInfo doGetAuthenticationInfo(AuthenticationToken token) throws AuthenticationException {
+        StatelessToken statelessToken = (StatelessToken) token;
+        HttpServletRequest req = statelessToken.getRequest();
+        Long userId = statelessToken.getUserId();
+        // 用来判断是开发环境，还是测试环境。本地开发环境不进行Degist认真。
+        if (StringUtils.equalsIgnoreCase(System.getProperty("skl.profile"), "development")) {
+            req.setAttribute("userId", userId);
+            return new SimpleAuthenticationInfo(userId,statelessToken.getDigstResponse(),getName());
+        }
+        
+        AppUser appUser = commonService.queryAppUserById(userId);
+        // 判断用户是否存在和在线
+        if (appUser == null) {
+            log.warn("不存在用户[{}]", userId);
+            throw new AuthenticationException("用户不存在");
+        }else if ((appUser.getStatus() == null) || (appUser.getStatus() != null && !appUser.getStatus())) {
+        	throw new AuthenticationException("用户不在线");
+        }
+     // 判读用户是否离线？是否需要
+        String random = appUser.getCloudRandom();
+        String password = appUser.getPassword();
+        String uri = req.getRequestURI();
+        log.info("*******************uri=" + uri);
+        log.info("******************random=" + random);
+        String method = req.getMethod();
+        log.info("*******************random=" + random);
+        String HA1b = HeartMd5Util.getMD5(userId + ":" + random + ":" + password);
+        String HA2b = HeartMd5Util.getMD5(method + ":" + uri);
+        String HA3b = HeartMd5Util.getMD5(HA1b + ":" + random + ":" + HA2b);
+        log.info("********************HA1b=" + HA1b);
+        log.info("********************HA2b=" + HA2b);
+        log.info("********************HA3b=" + HA3b);
+        return new SimpleAuthenticationInfo(userId,HA3b,getName());
+    }
+    
+    
+}

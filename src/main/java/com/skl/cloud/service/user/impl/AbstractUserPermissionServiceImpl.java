@@ -1,0 +1,159 @@
+package com.skl.cloud.service.user.impl;
+
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.skl.cloud.common.entity.IdEntity;
+import com.skl.cloud.common.exception.BusinessException;
+import com.skl.cloud.dao.user.PermissionMapper;
+import com.skl.cloud.dao.user.RoleMapper;
+import com.skl.cloud.dao.user.UserPermissionMapper;
+import com.skl.cloud.model.user.AppUser;
+import com.skl.cloud.model.user.Permission;
+import com.skl.cloud.model.user.Role;
+import com.skl.cloud.service.user.UserPermissionService;
+
+/**
+ * 
+ * @ClassName: AbstractUserPermissionServiceImpl
+ * @Description: TODO
+ * <p>Creation Date: 2016年6月1日 and by Author: zhaonao </p>
+ *
+ * @author $Author: zhaonao $
+ * @date $Date: 2016-06-07 17:39:56 +0800 (Tue, 07 Jun 2016) $
+ * @version  $Revision: 9494 $
+ */
+public abstract class AbstractUserPermissionServiceImpl<T extends IdEntity> extends AbstractUserServiceImpl<T>
+		implements UserPermissionService<T> {
+
+	@Autowired
+	private UserPermissionMapper userPermissionMapper;
+
+	@Autowired
+	private PermissionMapper permissionMapper;
+
+	@Autowired
+	private RoleMapper roleMapper;
+
+	@Override
+	@Transactional
+	public void addUserRole(Long userId, Long roleId, Long cameraId) throws BusinessException {
+		userPermissionMapper.insertUserRole(userId, roleId, cameraId);
+	}
+
+	@Override
+	@Transactional
+	public void addRolePermission(Long roleId, Long permissionId) throws BusinessException {
+		userPermissionMapper.insertRolePermission(roleId, permissionId);
+
+	}
+
+	@Override
+	@Transactional
+	public void deleteUserRole(Long userId, Long roleId, Long cameraId) throws BusinessException {
+		userPermissionMapper.deleteUserRole(userId, roleId, cameraId);
+
+	}
+
+	@Override
+	@Transactional
+	public void deleteRolePermission(Long roleId, Long permissionId) throws BusinessException {
+		userPermissionMapper.deleteRolePermission(roleId, permissionId);
+
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public List<AppUser> queryUserRole(Long roleId) throws BusinessException {
+		return userPermissionMapper.queryUserRole(roleId);
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public List<Role> queryRoleUser(Long userId) throws BusinessException {
+		return userPermissionMapper.queryRoleUser(userId);
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public List<Role> queryRolePermission(Long permissionId) throws BusinessException {
+		return userPermissionMapper.queryRolePermission(permissionId);
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public List<Permission> queryPermissionRole(Long roleId) throws BusinessException {
+		return userPermissionMapper.queryPermissionRole(roleId);
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public Set<String> findRoleName(Long userId) throws BusinessException {
+		List<Role> list = this.queryRoleUser(userId);
+		Set<String> roleSet = new HashSet<String>();
+		if (list != null) {
+			for (Role role : list) {
+				roleSet.add(role.getName());
+			}
+		}
+		return roleSet;
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public Set<String> findPermission(Long userId) throws BusinessException {
+		List<Role> roleList = this.queryRoleUser(userId);
+		Set<String> permissionSet = new HashSet<String>();
+		if (roleList != null) {
+			for (Role role : roleList) {
+				if (Integer.valueOf(1).equals(role.getAvailableFlag())) {
+					List<Permission> permissionList = this.queryPermissionRole(role.getId());
+					if (permissionList != null) {
+						for (Permission permission : permissionList) {
+							if (Integer.valueOf(1).equals(permission.getAvailableFlag())) {
+								permissionSet.add(permission.getPermission());
+							}
+						}
+					}
+				}
+			}
+		}
+		return permissionSet;
+	}
+
+	@Override
+	@Transactional
+	public void assignRole(Long userId, String userKind, Integer roleType) throws BusinessException {
+		this.assignRole(userId, userKind, roleType, 0L);
+	}
+
+	@Override
+	@Transactional
+	public void assignRole(Long userId, String userKind, Integer roleType, Long cameraId) throws BusinessException {
+
+		// 1. 查询对应有效角色(kind)
+		Role role = new Role();
+		role.setType(roleType);
+		role.setAvailableFlag(1);
+		role.setKind(userKind);
+		role = roleMapper.queryRole(role);
+
+		// 2. 赋予平台角色
+		if (role == null) {
+			role = new Role();
+			role.setType(roleType);
+			role.setAvailableFlag(1);
+			role.setKind("all");
+			role = roleMapper.queryRole(role);
+		}
+
+		// 3. 关联用户&角色
+		if (role != null) {
+			userPermissionMapper.insertUserRole(userId, role.getId(), cameraId);
+		}
+	}
+}

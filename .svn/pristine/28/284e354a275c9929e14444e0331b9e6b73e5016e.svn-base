@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.skl.cloud.dao.common.CommonMapper">
+	<resultMap id="appUserResultMap" type="com.skl.cloud.model.user.AppUser">
+        <id column="user_id" property="id" jdbcType="BIGINT" />
+        <result column="user_name" property="name" jdbcType="VARCHAR" />
+        <result column="user_password" property="password" jdbcType="VARCHAR" />
+        <result column="user_kind" property="kind" jdbcType="VARCHAR" />
+        <result column="user_email" property="email" jdbcType="VARCHAR" />
+        <result column="user_status" property="status" jdbcType="BIT" />
+        <result column="user_createDate" property="createDate" jdbcType="TIMESTAMP" />
+        <result column="user_logintime" property="loginTime" jdbcType="TIMESTAMP" />
+        <result column="user_random" property="random" jdbcType="VARCHAR" />
+        <result column="user_portraint_id" property="portraintId" jdbcType="VARCHAR" />
+        <result column="user_portraint_uuid" property="portraintUuid" jdbcType="VARCHAR" />
+        <result column="cloud_random" property="cloudRandom" jdbcType="VARCHAR" />
+        <result column="user_heartbeat_time" property="heartbeatTime" jdbcType="TIMESTAMP" />
+        <result column="notification" property="notification" jdbcType="VARCHAR" />
+        <result column="user_type" property="userType" jdbcType="TINYINT" />
+        <result column="bind_flag" property="bindFlag" jdbcType="TINYINT" />
+    </resultMap>
+    
+    <resultMap id="ResultMapWithBLOBs" type="com.skl.cloud.model.user.AppUser"
+        extends="appUserResultMap">
+        <result column="user_portraint" property="portraint" jdbcType="LONGVARBINARY" />
+    </resultMap>
+
+	<select id="queryAppUserById" parameterType="java.lang.Long"
+		statementType="CALLABLE" resultMap="appUserResultMap">
+	<![CDATA[
+	CALL selectUserById (#{0})
+	]]>
+	</select>
+	
+</mapper>

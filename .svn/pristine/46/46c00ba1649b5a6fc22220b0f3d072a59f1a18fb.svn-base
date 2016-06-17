@@ -1,0 +1,8 @@
+#aws_cn_developer
+#jdbc_url=jdbc:mysql://sklcloud.chwddmqmer4e.rds.cn-north-1.amazonaws.com.cn:3306/sklCloud?useUnicode=true&characterEncoding=UTF-8&zeroDateTimeBehavior=convertToNull
+#jdbc_username=cloud
+#jdbc_password=SkyLight-2016
+
+jdbc_url=jdbc:mysql://54.222.128.57:3306/sklCloud?useUnicode=true&characterEncoding=UTF-8&zeroDateTimeBehavior=convertToNull
+jdbc_username=root
+jdbc_password=12345678

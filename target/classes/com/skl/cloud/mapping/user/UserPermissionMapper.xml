@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.skl.cloud.dao.user.UserPermissionMapper">
+	<insert id="insertUserRole" parameterType="long">
+       	INSERT INTO t_user_role_link(
+        	user_id,
+        	role_id,
+	        camera_id,        
+	        create_date,
+	        l_upd_date
+        	)
+    	VALUES(
+    		#{0},
+    		#{1},
+    		#{2},
+    		now(),
+    		now()
+    		)
+	</insert>
+	
+	<insert id="insertRolePermission" parameterType="long">
+       	INSERT INTO t_role_permission_link(
+        	user_id,
+        	permission_id,
+	        create_date,
+	        l_upd_date
+        	)
+    	VALUES(
+    		#{0},
+    		#{1},
+    		now(),
+    		now()
+    		)
+	</insert>
+    
+    <delete id="deleteUserRole" parameterType="long">
+        DELETE FROM t_user_role_link
+        <where>
+       		1=1
+       		<if test="param1 != null and param1 != ''">
+				and user_id = #{0}
+			</if>
+			<if test="param2 != null and param2 != ''">
+				and role_id = #{1}
+			</if>
+			<if test="param3 != null and param3 != ''">
+				and camera_id = #{2}
+			</if>
+        </where> 
+    </delete>
+    
+    <delete id="deleteRolePermission" parameterType="long">
+        DELETE FROM t_role_permission_link
+        <where>
+       		1=1
+			<if test="param1 != null and param1 != ''">
+				and role_id = #{0}
+			</if>
+			<if test="param2 != null and param2 != ''">
+				and permission_id = #{1}
+			</if>
+        </where> 
+    </delete>
+    
+    <select id="queryUserRole" parameterType="long" resultType="com.skl.cloud.model.user.AppUser">
+        SELECT
+			u.user_id as id,
+			u.user_name as name,
+			u.user_password as password,
+			u.user_kind as kind,
+			u.user_email as email,
+			u.user_status as status,
+			u.user_createDate as createDate,
+			u.user_logintime as loginTime,
+			u.user_random as random,
+			u.user_portraint_id as portraintId,
+			u.user_portraint_uuid as portraintUuid,
+			u.cloud_random as cloudRandom,
+			u.user_heartbeat_time as heartbeatTime,
+			u.notification as notification,
+			u.user_type as userType,
+			u.bind_flag as bindFlag,
+			u.system as systemType,
+			u.push_token as pushToken,
+			u.link_user_id as linkUserId
+        FROM
+            t_app_user u, t_user_role_link l
+        WHERE
+        	l.role_id = #{0} AND
+        	l.user_id = u.user_id
+    </select>
+    
+    <select id="queryRoleUser" parameterType="long" resultType="com.skl.cloud.model.user.Role">
+        SELECT
+            r.role_id as id,
+	        r.name as name,
+	        r.description as description,
+	        r.kind as kind,
+	        r.type as type,
+	        r.available_flag as availableFlag,	        
+	        r.create_date as createDate,
+	        r.l_upd_date as lupDate
+        FROM
+            t_role r, t_user_role_link l
+        WHERE
+        	l.user_id = #{0} AND
+        	l.role_id = r.role_id
+    </select>
+    
+    <select id="queryRolePermission" parameterType="long" resultType="com.skl.cloud.model.user.Role">
+        SELECT
+           	r.role_id as id,
+	        r.name as name,
+	        r.description as description,
+	        r.kind as kind,
+	        r.type as type,
+	        r.available_flag as availableFlag,	        
+	        r.create_date as createDate,
+	        r.l_upd_date as lupDate
+	        l_upd_date as lupDate
+        FROM
+            t_role r, t_role_permission_link l
+        WHERE
+        	l.permission_id = #{0} AND
+        	l.role_id = r.role_id
+    </select>
+    
+    <select id="queryPermissionRole" parameterType="long" resultType="com.skl.cloud.model.user.Permission">
+        SELECT
+            p.permission_id as id,
+			p.name as name,
+			p.type as type,
+			p.uri as uri,
+			p.parent_id as parentId,
+			p.permission as permission,
+			p.available_flag as availableFlag,
+			p.create_date as createDate,
+			p.l_upd_date as lupDate
+        FROM
+            t_permission p, t_role_permission_link l
+        WHERE
+        	l.role_id = #{0} AND
+        	l.permission_id = p.permission_id
+    </select>
+</mapper>

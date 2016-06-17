@@ -1,0 +1,4 @@
+#local STE db1
+jdbc_url=jdbc:mysql://192.168.139.210:3306/sklCloud?useUnicode=true&characterEncoding=UTF-8&zeroDateTimeBehavior=convertToNull
+jdbc_username=cloud
+jdbc_password=cloud1234

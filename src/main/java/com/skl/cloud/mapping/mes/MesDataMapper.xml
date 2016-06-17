@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.skl.cloud.dao.mes.MesDataMapper">
+
+	<insert id="insertMesData" parameterType="com.skl.cloud.model.mes.PlatformProd">
+		
+		replace into t_platform_prod ( prod_pn, prod_sn, prod_mac,
+		prod_version, prod_makedate, createdate, tbbz ) values
+		<foreach collection="list" item="item" index="index"
+			separator=",">
+			( #{item.prodPn}, #{item.prodSn}, #{item.prodMac},
+			#{item.prodVersion}, #{item.prodMakedate}, #{item.createdate},
+			#{item.tbbz} )
+		</foreach>
+	</insert>
+
+	<select id="queryAmountOfTheDifference" resultType="Long">
+	<![CDATA[
+		SELECT COUNT(p.prod_sn)
+			from 
+			t_platform_prod p,
+			t_platform_configmapping c
+		where 
+			p.prod_pn = c.prod_pn
+		AND p.prod_sn not in (SELECT camera_serialno from t_platform_ipcamera)
+	]]>
+	</select>
+
+	<insert id="recordsFromProdToIpcamera" parameterType="Long"
+		statementType="CALLABLE">
+	
+	   <![CDATA[
+	        CALL t_platform_ipcamera_insert(#{dataCount})
+	   ]]>
+
+	</insert>
+
+	<delete id="deleteMesAll" parameterType="java.util.List">
+		DELETE FROM t_platform_prod where prod_sn in
+		<foreach collection="list" item="platformProd" open="("
+			separator="," close=")">#{ platformProd.prodSn}
+
+		</foreach>
+	</delete>
+	<resultMap type="com.skl.cloud.model.sub.SubException" id="subExceptionResult">
+		<id column="exception_content" property="exceptionContent" />
+		<result column="create_date" property="createDate" />
+		<result column="subsys_private_Ip" property="subsysPrivateIp" />
+		<result column="exceptionName" property="exceptionName" />
+	</resultMap>
+	<delete id="deleteExceptionLog">
+		delete FROM
+		t_platform_exception
+		WHERE
+		DATE_SUB(NOW(),INTERVAL 3 MONTH)>= date(create_date)
+	</delete>
+</mapper>

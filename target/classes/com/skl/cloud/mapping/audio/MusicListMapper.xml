@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.skl.cloud.dao.audio.MusicListMapper">
+
+	<select id="getMusicListBySN" parameterType="string" resultMap="musicListResultMap">
+		SELECT * FROM t_platform_ipcamera_musiclist WHERE camera_sn = #{sn}
+	</select>
+
+	<insert id="saveMusicList" parameterType="com.skl.cloud.model.audio.Music" useGeneratedKeys="true">
+	  	<selectKey keyProperty="id" resultType="Long" order="BEFORE">
+			 select get_uuid_short() as id
+		</selectKey>
+    <![CDATA[ 
+	  	INSERT INTO t_platform_ipcamera_musiclist (
+	  	    id,
+			camera_id,
+			camera_sn,
+			total_time,
+			create_date,
+			l_upd_date
+		)
+		VALUES(
+		    #{id},
+			#{cameraId},
+			#{cameraSn},
+			#{totalTime},
+			#{createDate},
+			#{updateDate}
+		)
+	]]>
+	</insert>	
+	
+	<update id="setMusicListTotalTime" >
+	UPDATE t_platform_ipcamera_musiclist
+    SET total_time = #{totalTime},
+        l_upd_date = now()
+    WHERE
+	    id = #{listId}
+	</update>
+		
+	<select id="getMusicBySN"  resultMap="musicResultMap">
+		SELECT
+			mu.*, 
+			me.camera_id,
+			me.file_name,
+			me.file_url,
+			me.file_size,
+			me.play_time,
+			me.media_type,
+			me.source_type
+		FROM
+			t_platform_ipcamera_music mu,
+			t_platform_ipcamera_musiclist ml,
+			t_platform_media me
+		WHERE
+			mu.list_id = ml.id
+		AND mu.media_id = me.id
+		AND mu.status = #{status}
+		AND mu.id = #{id}
+		AND ml.camera_sn = #{sn}
+	</select>	
+
+	<select id="listMusicByListId" parameterType="long" resultMap="musicResultMap">
+		SELECT
+			mu.*, 
+			me.camera_id,
+			me.file_name,
+			me.file_url,
+			me.file_size,
+			me.play_time,
+			me.media_type,
+			me.source_type
+		FROM
+			t_platform_ipcamera_music mu,
+			t_platform_media me
+		WHERE
+			mu.media_id = me.id
+		AND mu.list_id = #{listId}
+		AND mu.status = 1
+	</select>
+
+	<select id="getIdBySn" parameterType="string" resultType="long">
+		SELECT
+			id
+		FROM
+			t_platform_ipcamera_musiclist 
+		WHERE
+			camera_sn = #{sn}
+	</select>
+
+	<insert id="saveMusic" parameterType="com.skl.cloud.model.audio.Music" useGeneratedKeys="true">
+	    <selectKey keyProperty="id" resultType="Long" order="BEFORE">
+			 select get_uuid_short() as id
+		</selectKey>
+    <![CDATA[ 
+	  	INSERT INTO t_platform_ipcamera_music(
+	       	id,
+			media_id,
+			display_name,
+			list_id,
+			active_flag,
+			task_id,
+			status,
+			create_date,
+			l_upd_date
+		)
+		VALUES(
+		    #{id},
+			#{media.id},
+			#{displayName},
+			#{listId},
+			#{activeFlag},
+			#{taskId},
+			#{status},
+			#{createDate},
+			#{updateDate}
+		)
+	]]>
+	</insert>
+	
+	<update id="setMusicStatus" >
+        UPDATE t_platform_ipcamera_music SET status = #{status} WHERE id = #{musicId}
+	</update>
+
+	<select id="isExistTaskId" parameterType="string" resultType="Boolean">
+    <![CDATA[
+        SELECT
+            count(id) AS count
+        FROM
+            t_platform_ipcamera_music
+        WHERE
+            task_id = #{0}
+    ]]>
+   </select>
+	
+	<select id="getMusicByIdSn"  resultMap="musicResultMap">
+		SELECT
+			mu.*, 
+			me.camera_id,
+			me.file_name,
+			me.file_url,
+			me.file_size,
+			me.play_time,
+			me.media_type,
+			me.source_type
+		FROM
+			t_platform_ipcamera_music mu,
+			t_platform_ipcamera_musiclist ml,
+			t_platform_media me
+		WHERE
+			mu.list_id = ml.id
+		AND mu.media_id = me.id
+		AND mu.id = #{id}
+		AND ml.camera_sn = #{sn}
+	</select>	
+	
+	<resultMap id="musicResultMap" type="com.skl.cloud.model.audio.Music">
+		<id column="id" property="id" jdbcType="BIGINT" />
+		<result column="list_id" property="listId" jdbcType="BIGINT" />
+		<result column="display_name" property="displayName" jdbcType="VARCHAR" />
+		<result column="total_time" property="totalTime" jdbcType="BIGINT" />
+		<result column="active_flag" property="activeFlag" jdbcType="TINYINT" />
+		<result column="task_id" property="taskId" jdbcType="VARCHAR" />
+	    <result column="status" property="status" jdbcType="TINYINT" />		
+		<result column="create_date" property="createDate" jdbcType="TIMESTAMP" />
+		<result column="l_upd_date" property="updateDate" jdbcType="TIMESTAMP" />
+		<association property="media" javaType="com.skl.cloud.model.audio.Media">
+			<id column="media_id" property="id" jdbcType="BIGINT" />
+			<result column="camera_id" property="cameraId" jdbcType="BIGINT" />
+			<result column="file_name" property="fileName" jdbcType="VARCHAR" />
+			<result column="file_url" property="fileUrl" jdbcType="VARCHAR" />
+			<result column="file_size" property="fileSize" jdbcType="BIGINT" />			
+			<result column="play_time" property="playTime" jdbcType="BIGINT" />
+			<result column="media_type" property="mediaType" jdbcType="TINYINT" />
+			<result column="source_type" property="sourceType" jdbcType="TINYINT" />
+		</association>
+	</resultMap>
+
+	<resultMap id="musicListResultMap" type="com.skl.cloud.model.audio.MusicList">
+		<id column="id" property="id" jdbcType="BIGINT" />
+		<result column="camera_id" property="cameraId" jdbcType="BIGINT" />
+		<result column="camera_sn" property="cameraSn" jdbcType="VARCHAR" />
+		<result column="total_time" property="totalTime" jdbcType="BIGINT" />
+		<result column="create_date" property="createDate" jdbcType="TIMESTAMP" />
+		<result column="l_upd_date" property="updateDate" jdbcType="TIMESTAMP" />
+		<collection property="musicList" ofType="com.skl.cloud.model.audio.Music" select="listMusicByListId" column="id" />
+	</resultMap>
+</mapper>

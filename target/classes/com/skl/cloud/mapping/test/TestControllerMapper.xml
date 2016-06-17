@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.skl.cloud.dao.test.TestControllerMapper">
+	<insert id="insertNatInfo" parameterType="java.util.Map">
+	<![CDATA[
+INSERT INTO t_platform_nat (
+	devtype,
+	nattype,
+	inettype,
+	inetserver,
+	routename,
+	name,
+	place,
+	createtime
+)
+VALUES
+	(
+		#{devType},
+		#{natType},
+		#{inetType},
+		#{inetServer},
+		#{routeName},
+		#{name},
+		#{place},
+		NOW()
+	)	
+	]]>
+	</insert>
+</mapper>
